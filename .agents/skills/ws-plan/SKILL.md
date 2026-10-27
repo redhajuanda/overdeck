@@ -94,6 +94,11 @@ Load context that applies — and only that:
 - Each repo you'll touch: skim its `AGENTS.md` for rules that constrain the design (the
   subagent for that repo reads it in full).
 - Product, design and schema docs that apply to this kind of work (`WORKFLOW.md` § 3).
+- `context/`: the glossary always; from the `context/README.md` index, the domain,
+  feature, integration and decision notes on this topic; `architecture/contracts.md` when the
+  change crosses a repo boundary. Treat stamped notes as leads, not truth — the recon in § 2
+  confirms them. An accepted decision is a constraint: going against it needs the user's yes
+  and a new decision that supersedes it (ws-archive writes it).
 - Related prior plans: `ls plans/*/` (every member's) and skim any whose slug overlaps.
 - Outside material: the `sources/README.md` index — open only the rows on this topic (and
   `project/` when timing or scope matters); list the ones the plan relies on in its
@@ -290,6 +295,11 @@ in this order of readers: *In plain words* → *How it works* (diagrams) → det
   (`WORKFLOW.md` § 3) are fine; internal acronyms aren't, until defined.
 - **Must / should / may** mean required / recommended / optional. Use them that way only.
 - Every term that is a domain concept, a code name, or could mean two things → *Glossary*.
+  Terms already in `context/glossary.md` are used as written there and not redefined; the plan's
+  *Glossary* holds only the new ones, and ws-archive adds those to `context/glossary.md` when
+  the plan ships.
+- The plan's *Contracts* add only what is new; they follow `context/architecture/contracts.md`
+  (error shape, IDs, time, casing) and say so where it matters.
 
 ### 4b. Diagrams — show the flow, don't just describe it
 
@@ -393,7 +403,10 @@ Run through this; fix, don't just note:
 - [ ] Every file path in the plan exists (`ls`/`rg` them — a quick loop over backticked paths) or
       is clearly marked **new**.
 - [ ] Every symbol named exists where claimed; line hints are within a few lines.
-- [ ] Shapes agree across all repos, field by field (names, casing, optionality).
+- [ ] Shapes agree across all repos, field by field (names, casing, optionality), and with
+      `context/architecture/contracts.md`.
+- [ ] Domain words match `context/glossary.md`; nothing contradicts an accepted
+      `context/decisions/` entry without the user's yes recorded in *Decisions*.
 - [ ] Each task has files + Verify; dependencies form a valid order; no task needs a later one.
 - [ ] Migrations, feature flags, backfills, cache/CDN, republishing of already-published
       artifacts, and backwards compatibility with existing data are addressed or explicitly N/A

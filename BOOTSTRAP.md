@@ -28,7 +28,13 @@ then delete this file. Ask the user only what you can't find out yourself; ask i
   commands, dev server port, local config files, deploy trigger). Leave § 9 empty.
   Mark anything you couldn't verify with `<!-- TODO: confirm -->` and list it in your report.
 - `PRODUCT.md` from the user's paragraph; `DESIGN.md` stays a stub until the first UI work.
-- `context/architecture/README.md` — replace `__PROJECT__`.
+- `context/` — seed from the repos you just read, stamping each with `Checked against:` the
+  commits you read: `glossary.md` (the domain words that recur in models, routes and UI),
+  `actors.md` (roles from auth/permission code, external systems from env vars and clients),
+  `architecture/overview.md` and `architecture/contracts.md` (auth, errors, IDs, time, paging as
+  the code really does them). Fill the index in `context/README.md`. Leave `domain/`,
+  `integrations/` and `decisions/` empty: they grow when work first needs them. Unsure →
+  `<!-- TODO: confirm -->`, as above.
 - `agents.yaml` — set `max_parallel` to the number of code repos; keep the models unless asked.
 - `members.yaml` — replace the `__MEMBER*__` entry with the first member; set `docs_language`.
 

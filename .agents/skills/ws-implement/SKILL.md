@@ -28,7 +28,8 @@ imported) → one parallel review → one parallel fix round → finish.
 
 1. Find the plan: `./scripts/ws find plan <id, number or slug>` → `plans/<code>/NNN_slug/plan.md`
    (ask only if several active plans match). Read it fully —
-   header, *Glossary*, *Decisions*, *Contracts*, *Tasks*, *Rollout*, *Acceptance*.
+   header, *Glossary*, *Decisions*, *Contracts*, *Tasks*, *Rollout*, *Acceptance*. Also
+   `context/architecture/contracts.md` (if filled in) and any note on the plan's `Context:` line.
 2. `./scripts/ws doctor`; `./scripts/ws sync` if anything is missing or stale.
 3. **Drift check.** For each repo in the header, compare `Based on:` SHA with the branch tip:
    `git -C repositories/<repo> log --oneline <sha>..origin/<branch> -- <files the tasks name>`.
@@ -163,7 +164,9 @@ Don't wait for all agents; check each report when it lands:
    as reverse changes). Files outside the task lists need a
    matching *Deviation*.
 3. **Contract as built = plan § Contracts**, field by field (names, casing, optional vs
-   required, enums), and = the other repos' *Contract as built* once they arrive. Open the
+   required, enums), and = the other repos' *Contract as built* once they arrive. What the
+   plan leaves unsaid (error shape, ID format, time, casing) follows
+   `context/architecture/contracts.md`. Open the
    diff only at those boundary lines.
 4. Any task `blocked`/`partial`, any `NOT RUN` → note it for § 8 / § 9.
 

@@ -28,8 +28,8 @@ tweaks), or ws-plan (needs tasks). `/ws-explore` is never this skill.
 - **Creative.** Bring at least one direction the user did not mention — a smaller version, a
   different angle on the same problem, or a way to reuse something the product already does.
   Always weigh "do nothing" and "the smallest version that is still worth shipping".
-- **Grounded.** Argue from the product docs (`WORKFLOW.md` § 3) and from what the code really
-  does (probes, § 3), not from generic best practice.
+- **Grounded.** Argue from the product docs (`WORKFLOW.md` § 3), what `context/` says the
+  system does today, and what the code really does (probes, § 3), not from generic best practice.
 - **Honest, then aligned.** Disagree with reasons when you disagree. The user decides; record
   their choice and the alternative you argued for under *Options considered*. Don't repeat an
   argument they already settled.
@@ -47,7 +47,10 @@ tweaks), or ws-plan (needs tasks). `/ws-explore` is never this skill.
    the working tree, so a peer session's uncommitted intent counts too). The file goes in the
    session member's folder, `intents/<code>/` (`./scripts/ws whoami`). Intents number
    separately from plans; refer to them as "intent rj-008".
-3. **Load context:** the product docs `WORKFLOW.md` § 3 names, and skim related active and
+3. **Load context:** the product docs `WORKFLOW.md` § 3 names — `PRODUCT.md` for what we want,
+   `context/glossary.md` and `context/actors.md`, and from the `context/README.md` index the
+   domain notes and decisions on this topic (an accepted decision is a constraint, or a thing
+   the intent explicitly proposes to revisit) — and skim related active and
    archived intents and plans (`ls intents plans`) whose slug overlaps — the idea may already
    have been discussed, rejected, or half-built. Check the `sources/README.md` index for
    material on this topic (a PRD, MOM, spec, `project/` milestones) and read what matters;
@@ -146,7 +149,7 @@ would make you change course. Ask for agreement (`AskUserQuestion`: agree / chan
 On agreement set `Status: agreed · YYYY-MM-DD`. Suggest the next step: ws-plan with this intent.
 Don't commit unless asked.
 
-**Learn.** Last, run [`ws-learn`](../ws-learn/SKILL.md) § *Record*: a correction, a wrong command or doc, or a detour from this discussion (product facts belong in `PRODUCT.md`) gets one line in the right project file. Nothing → skip silently.
+**Learn.** Last, run [`ws-learn`](../ws-learn/SKILL.md) § *Record*: a correction, a wrong command or doc, or a detour from this discussion (what we want belongs in `PRODUCT.md`; how the system works today in `context/`) gets one line in the right project file. Nothing → skip silently.
 
 ## Revising
 

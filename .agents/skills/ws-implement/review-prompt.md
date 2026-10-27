@@ -18,7 +18,9 @@ You review **every repo listed below**, each against its own rules, plus the cro
 <the plan's *In plain words* section, ≤ 6 sentences>
 
 Plan: `<workspace>/plans/<code>/<NNN_slug>/plan.md` — *Glossary*,
-*Contracts*, *Rollout* and *Acceptance* are the spec you review against.
+*Contracts*, *Rollout* and *Acceptance* are the spec you review against, together with
+`<workspace>/context/architecture/contracts.md` (cross-repo boundary rules) and any accepted
+decision in `<workspace>/context/decisions/` the plan cites. <omit what is still a stub>
 
 ## What to review
 

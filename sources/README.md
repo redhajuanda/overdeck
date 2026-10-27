@@ -2,7 +2,7 @@
 
 Material we were given, kept as received: PRDs, meeting notes, specs, contracts, milestone
 sheets, exports, screenshots. Our own writing lives elsewhere — how the system works in
-`context/architecture/`, decisions in `intents/` and `plans/`, product in `PRODUCT.md`.
+`context/`, lasting decisions in `context/decisions/`, what we want in `PRODUCT.md`.
 
 - **Layout:** one folder per topic or feature (`payments/`, `onboarding/`), original
   filenames. `project/` holds what spans the whole engagement (SOW, milestones, brand

@@ -4,6 +4,7 @@ Status: proposed · YYYY-MM-DD · repos: `<repo>` (<size>)…
 Based on: <repo> `<branch>@<sha>` … · depends on: <NNN or none> · blocks: <NNN or none>
 Intent: <intents/<code>/NNN_slug.md, or omit the line>
 Sources: <`sources/<topic>/<file>` …, or omit the line>
+Context: <`context/…` notes this plan relies on, or omit the line>
 
 ## In plain words
 
@@ -48,9 +49,11 @@ flowchart TD
 
 ## Glossary
 
+<Only terms new to this plan; existing ones are in `context/glossary.md` — use them as written.>
+
 | Term | Means | In code |
 |---|---|---|
-| <term used in this plan> | <one plain sentence> | `<code name / table / key>` |
+| <new term used in this plan> | <one plain sentence> | `<code name / table / key>` |
 
 ## Goal
 
@@ -78,6 +81,8 @@ Pattern to follow: <nearest existing feature + path> — copy its shape.
 ## Decisions
 
 **<Decision>** — <choice>, because <reason>. <Alternative rejected and why, one line.>
+<Mark one `(lasting)` when it binds future work beyond this plan — ws-archive offers it as a
+`context/decisions/` ADR. Follows an existing ADR → cite it: "per rj-d002".>
 
 <Options table only when there were genuinely competing designs:>
 
