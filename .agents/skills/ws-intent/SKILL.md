@@ -113,6 +113,11 @@ Dispatch:
    `repositories/<repo>/` (run `./scripts/ws doctor` first; `./scripts/ws sync` if stale). An
    intent is not tied to a branch; don't ask. If the user names a branch, read it the way
    ws-plan § 0a does (detached worktree, never switch the clone).
+   Knowledge repos (`knowledge:` in `workspace.yaml`) live in `repositories/knowledges/<name>/`
+   and are probed the same way when their `read-when:` matches the idea — someone else's
+   rules and contracts often decide which direction is cheap. `./scripts/ws relations <repo>`
+   tells you which repos an idea reaches. Something a direction needs from a knowledge repo
+   is a risk (its owner must agree), not scope we can promise.
 3. **Prompt:** fill [`probe-prompt.md`](probe-prompt.md) — every placeholder, self-contained.
    Group a repo's questions into one probe; independent repos in parallel, same message.
    - Claude Code: `Agent` tool, `subagent_type: "general-purpose"`, `model` = the family word

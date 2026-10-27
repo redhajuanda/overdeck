@@ -21,7 +21,9 @@ anything** — no file writes, no commits, no installs, no running the app. Read
   `<path: <workspace>/repositories/<repo>, or the recon worktree for a
   non-default source branch>` (source branch `<branch>`, `<sha>`).
 - Its role in this change: <1–2 sentences, e.g. "store and return the new `<thing>`;
-  validate its payload">.
+  validate its payload". For a knowledge repo (`<workspace>/repositories/knowledges/<repo>`):
+  "someone else's repo, read-only reference — report what it requires of our change, and
+  anything we would need its owner to change">.
 - The other repos (not yours — don't read them): <one line each on what they do in this change,
   so you know what crosses the boundary>.
 

@@ -64,6 +64,9 @@ style change is almost always FE only.
 
 Unsure whether a second repo is involved → ask once; don't create a spare worktree.
 
+Only `repos:` entries in `workspace.yaml` qualify — never a knowledge repo
+(`repositories/knowledges/`, read-only; `AGENTS.md` § Bootstrap).
+
 `./scripts/ws doctor`; `./scripts/ws sync` if a **needed** repo is missing or stale.
 
 ## 3. Confirm the source branch — always, before a *new* worktree

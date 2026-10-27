@@ -29,6 +29,7 @@ just routing.
 2. `./scripts/ws doctor`; run `./scripts/ws sync` if anything is missing or stale. Do this
    once for the whole run.
 3. Per plan, run ws-implement § 0 (read fully, drift check, task selection, release tasks out).
+   Tasks in a knowledge repo never enter the pool (ws-implement § 1).
    A plan that fails the drift check is re-verified (ws-plan § *Revising*) before it enters
    the schedule. Other plans don't wait for it.
 4. Ledger: create `plans/.ws-multi-implement.md` from § 7, or read it when resuming. Also

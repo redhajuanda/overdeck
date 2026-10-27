@@ -18,7 +18,20 @@ The repos are gitignored clones under `repositories/`, **never submodules**: not
 pinned, so `ws sync` always leaves you on the real branch tip. Never commit a sub-repo's
 files here.
 
-Repos are declared only in [`workspace.yaml`](workspace.yaml).
+Repos are declared only in [`workspace.yaml`](workspace.yaml), in two lists:
+
+- **`repos:`** — ours, cloned to `repositories/<name>/`. Plans, worktrees and PRs happen here.
+- **`knowledge:`** — someone else's repo, cloned to `repositories/knowledges/<name>/`: shared
+  contracts, guidelines, a design system, another team's service. **Read it, cite it as
+  `<name>@<sha>`, never edit it** — no tasks, no worktrees, no commits (`ws sync` disables its
+  push). Read it while shaping intents and plans when its `read-when:` matches the topic. A
+  change it needs is an *upstream ask* for its `owner:` — written up in the plan, and made only
+  when the user asks, as a PR from a separate clone outside this workspace.
+
+**Relations.** Each `repos:` entry lists its edges as `- <verb>: <target> — <why>`
+(`calls`, `depends-on`, `publishes`, `consumes`, `follows`). `./scripts/ws relations <repo>`
+shows what a change in that repo can reach — check it before deciding which repos a change
+touches. A change that adds or drops an edge updates `workspace.yaml` in the same work.
 
 ## Workspace rules
 
@@ -69,6 +82,12 @@ Repos are declared only in [`workspace.yaml`](workspace.yaml).
 |-----|------|-------|----------|
 | `repositories/__PROJECT__-fe/` | Frontend — <surfaces> | <stack> (`github.com:__OWNER__/__PROJECT__-fe`) | `repositories/__PROJECT__-fe/AGENTS.md` when present |
 | `repositories/__PROJECT__-be/` | Backend — <responsibilities> | <stack> (`github.com:__OWNER__/__PROJECT__-be`) | `repositories/__PROJECT__-be/AGENTS.md` when present |
+
+Knowledge repos — read-only, never edited here (§ Bootstrap). Delete the table if there are none.
+
+| Dir | Holds | Owner — how to contribute |
+|-----|-------|---------------------------|
+| `repositories/knowledges/<name>/` | <shared contracts, guidelines, design system, …> | <team> — <PR to their repo, issue, channel> |
 
 Each repo's own `AGENTS.md` and skills load **on demand, when a file in that directory is
 read** — and only via a real file read. Before working in a repo, read its `AGENTS.md` first.

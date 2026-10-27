@@ -7,8 +7,11 @@ then delete this file. Ask the user only what you can't find out yourself; ask i
 
 1. **Project name** (short slug, e.g. `acme`) — replaces `__PROJECT__`.
 2. **GitHub owner** of the app repos — replaces `__OWNER__`.
-3. **Repos**: for each one its SSH URL, default branch, role, and `code` or `knowledge`
-   (read-only reference). Repos that don't exist yet: offer to create them with `gh repo create`.
+3. **Repos**: for each one its SSH URL, default branch, role, and whether it is ours (`repos:`)
+   or someone else's read-only reference (`knowledge:` — then also its `owner:` and
+   `read-when:`). Which of ours calls, depends on, publishes to or follows which (`relations:`)
+   — recommend these from what the code shows after § 2's sync, don't ask blank.
+   Repos that don't exist yet: offer to create them with `gh repo create`.
 4. **One paragraph** on what the product is and who uses it (for `PRODUCT.md`).
 5. **You, as the first member** (for `members.yaml`): `code`, `prefix`, `name`, git `emails`,
    `language`, `tone`, plus the workspace's `docs_language`. Don't ask blank — **recommend
@@ -21,8 +24,11 @@ then delete this file. Ask the user only what you can't find out yourself; ask i
 
 ## 2. Fill in
 
-- `workspace.yaml` — one block per repo; remove the sample blocks.
-- `AGENTS.md` — the repo table, the "Working rules" lines per repo, the design routing.
+- `workspace.yaml` — one block per repo under `repos:` or `knowledge:`; remove the sample
+  blocks. After the sync below, fill each `repos:` entry's `relations:` from what the code
+  really calls and imports, and confirm them with the user; `./scripts/ws doctor` checks them.
+- `AGENTS.md` — the repo table (and the knowledge table, or delete it), the "Working rules"
+  lines per repo, the design routing.
 - Then `./scripts/ws sync` and read each repo's `AGENTS.md`, `README`, package manifest and
   CI config to fill `WORKFLOW.md` §§ 1–7 from the real code (install, typecheck, lint, test
   commands, dev server port, local config files, deploy trigger). Leave § 9 empty.

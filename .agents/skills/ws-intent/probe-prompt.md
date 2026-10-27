@@ -16,7 +16,9 @@ are fine.
 
 ## The repository
 
-- Repo: `<repo>` at `<workspace>/repositories/<repo>` (branch `<branch>`, `<sha>`).
+- Repo: `<repo>` at `<workspace>/repositories/<repo>` (branch `<branch>`, `<sha>`) — or, for a
+  knowledge repo, `<workspace>/repositories/knowledges/<repo>`: someone else's repo we follow
+  but never change; say what it requires of the idea and what its owner would have to change.
 - Read `<repo>/AGENTS.md` first when present, for orientation only. If it has none:
   <what `WORKFLOW.md` § 1 names for this repo | "orient from the README and directory layout">.
 - Other repos involved (not yours — don't read them): <one line each, or "none">.

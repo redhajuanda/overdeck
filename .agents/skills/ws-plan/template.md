@@ -5,6 +5,7 @@ Based on: <repo> `<branch>@<sha>` … · depends on: <NNN or none> · blocks: <N
 Intent: <intents/<code>/NNN_slug.md, or omit the line>
 Sources: <`sources/<topic>/<file>` …, or omit the line>
 Context: <`context/…` notes this plan relies on, or omit the line>
+Knowledge: <knowledge repos read, as `<name>@<sha>` …, or omit the line>
 
 ## In plain words
 
@@ -154,6 +155,14 @@ flowchart LR
 
 - [ ] <behaviour a reviewer can check without reading the code>
 - [ ] Every repo that parses the payload validates the same rules.
+
+## Upstream asks
+
+<Omit the section when none. Changes this plan needs in a knowledge repo — never made by this
+plan. One per ask: repo, owner, what and why, which task waits on it, and the ready-to-send
+issue/PR text. Made only when the user asks, from a separate clone (`AGENTS.md` § Bootstrap).>
+
+- `<knowledge repo>` (<owner>): <what to change, why> — blocks: T<n> / nothing
 
 ## Open questions
 

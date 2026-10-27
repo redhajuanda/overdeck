@@ -34,6 +34,8 @@ records it, and ws-implement later cuts `feat/NNN-slug` from it and opens the PR
 - Skip the question only when the user already named the branch in their request — then
   state it back in one line ("Planning against <repo-a> `<branch>`, <repo-b> `<branch>`.").
 - Revising an existing plan: confirm its `Based on:` branches the same way before re-reading.
+- Knowledge repos (`knowledge:` in `workspace.yaml`) are not asked about: they are read at
+  their tracked branch, as synced.
 
 A non-default source branch: `git -C repositories/<repo> fetch origin <branch>` and read it in
 a detached read-only worktree, `git -C repositories/<repo> worktree add --detach
@@ -99,7 +101,14 @@ Load context that applies — and only that:
   change crosses a repo boundary. Treat stamped notes as leads, not truth — the recon in § 2
   confirms them. An accepted decision is a constraint: going against it needs the user's yes
   and a new decision that supersedes it (ws-archive writes it).
-- Related prior plans: `ls plans/*/` (every member's) and skim any whose slug overlaps.
+- Which repos the change reaches: `./scripts/ws relations <repo>` for each repo you expect to
+  touch. A `calls` / `consumes` / `depends-on` edge into a touched repo is a reader of what
+  you change — check it in recon even if no task lands there.
+- Knowledge repos (`knowledge:` in `workspace.yaml`, cloned in `repositories/knowledges/`)
+  whose `read-when:` matches the topic, or that a touched repo `follows` / `depends-on`: give
+  each one a recon subagent like any repo (§ 2), read-only by nature. List them on the plan's
+  `Knowledge:` header line as `<name>@<sha>`. **Never put a task in one.** A change it would
+  need goes under *Upstream asks* (for its `owner:`); a task blocked on it says so.
 - Outside material: the `sources/README.md` index — open only the rows on this topic (and
   `project/` when timing or scope matters); list the ones the plan relies on in its
   `Sources:` header line.

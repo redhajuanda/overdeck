@@ -64,6 +64,10 @@ next. Never bundle several questions in one call.
 
 ## 1. Worktrees — never the user's checkout
 
+Only `repos:` entries get worktrees. A task that targets a knowledge repo
+(`repositories/knowledges/`) is a plan error: don't implement it — move it to the plan's
+*Upstream asks* and tell the user.
+
 Per repo touched, branch `feat/NNN-slug` off the plan's **source branch** — the branch in its
 `Based on:` header (fallback: `workspace.yaml`); `<branch>` below means that branch:
 
