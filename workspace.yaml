@@ -1,0 +1,27 @@
+# Repositories that make up this workspace.
+#
+# `./scripts/ws sync` clones whatever is missing and fetches what is present.
+# Nothing here is pinned to a commit: each repo tracks the branch named below,
+# so the workspace can never hand you a stale checkout the way a submodule can.
+#
+# Adding a repo? Add a block here — that is the only place it needs to exist.
+#
+# kind: code      — you work in it; ws sync only fetches, never moves your branch
+# kind: knowledge — read-only reference; ws sync fast-forwards it and disables push
+
+workspace: __PROJECT__
+
+repos:
+  - name: __PROJECT__-fe
+    url: git@github.com:__OWNER__/__PROJECT__-fe.git
+    branch: main
+    kind: code
+    role: Frontend — <stack> (<surfaces>)
+    agents: repositories/__PROJECT__-fe/AGENTS.md
+
+  - name: __PROJECT__-be
+    url: git@github.com:__OWNER__/__PROJECT__-be.git
+    branch: main
+    kind: code
+    role: Backend — <stack> (<APIs, auth, storage, …>)
+    agents: repositories/__PROJECT__-be/AGENTS.md

@@ -1,0 +1,22 @@
+# Sub-repositories. Cloned and kept current by `./scripts/ws sync`,
+# declared in workspace.yaml. Never submodules — see AGENTS.md.
+/repositories/*
+!/repositories/.gitkeep
+
+# Worktrees made by ws-implement / ws-multi-implement / ws-direct / ws-explore:
+#   .worktrees/NNN_slug/<repo>        (plans)
+#   .worktrees/direct_<slug>/<repo>   (direct edits)
+#   .worktrees/explore_<slug>/<repo>  (sticky explore sessions; kept until PR merges)
+# `./scripts/ws doctor` lists them; ws-archive removes a plan's folder.
+/.worktrees/
+
+# Personal agent settings
+/.claude/settings.local.json
+
+# ws sync lock
+/.ws.lock
+/.ws.lock.d/
+
+.DS_Store
+__pycache__/
+node_modules/

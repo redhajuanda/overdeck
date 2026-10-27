@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+# ws — overdeck workspace manager.
+#
+#   ws sync     clone missing repos, fetch present ones, fast-forward knowledge repos
+#   ws doctor   report what is missing or stale (incl. worktrees), exit non-zero if a repo is missing
+#   ws status   one line per repo: branch, dirty count, ahead/behind
+#   ws foreach  run a command in every code repo, e.g. ws foreach git fetch
+#
+# Reads workspace.yaml. No dependencies beyond bash + git + awk.
+set -euo pipefail
+
+# Serialise concurrent runs: parallel agents calling `ws sync` would otherwise
+# race two `git fetch` on the same repo and fail on .git lockfiles.
+# macOS has no flock(1), so fall back to an mkdir lock — atomic everywhere.
+_lock() {
+  LOCK="$ROOT/.ws.lock"
+  if command -v flock >/dev/null 2>&1; then
+    exec 9>"$LOCK"
+    flock -w 120 9 || { echo "ws: another ws run holds the lock; giving up" >&2; exit 1; }
+    return
+  fi
+  local i=0
+  until mkdir "$LOCK.d" 2>/dev/null; do
+    i=$((i + 1))
+    [ "$i" -ge 120 ] && { echo "ws: another ws run holds the lock; giving up" >&2; exit 1; }
+    sleep 1
+  done
+  trap 'rmdir "$LOCK.d" 2>/dev/null || true' EXIT
+}
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MANIFEST="$ROOT/workspace.yaml"
+REPO_DIR="repositories"   # where the declared repos are cloned
+cd "$ROOT"
+
+[ -f "$MANIFEST" ] || { echo "ws: no workspace.yaml at $ROOT" >&2; exit 1; }
+
+if [ -t 1 ]; then B=$'\033[1m'; R=$'\033[31m'; G=$'\033[32m'; Y=$'\033[33m'; D=$'\033[2m'; N=$'\033[0m'
+else B=; R=; G=; Y=; D=; N=; fi
+
+# Emit "name<TAB>url<TAB>branch<TAB>kind" per repo.
+repos() {
+  awk '
+    /^[[:space:]]*#/ { next }
+    /^[[:space:]]*-[[:space:]]*name:[[:space:]]*/ {
+      if (name != "") print name "\t" url "\t" branch "\t" kind
+      name = $0; sub(/^[^:]*:[[:space:]]*/, "", name); url = branch = kind = ""; next
+    }
+    name != "" && /^[[:space:]]+url:[[:space:]]*/    { url = $0;    sub(/^[^:]*:[[:space:]]*/, "", url);    next }
+    name != "" && /^[[:space:]]+branch:[[:space:]]*/ { branch = $0; sub(/^[^:]*:[[:space:]]*/, "", branch); next }
+    name != "" && /^[[:space:]]+kind:[[:space:]]*/   { kind = $0;   sub(/^[^:]*:[[:space:]]*/, "", kind);   next }
+    END { if (name != "") print name "\t" url "\t" branch "\t" kind }
+  ' "$MANIFEST"
+}
+
+dirty()  { git -C "$1" status --porcelain 2>/dev/null | wc -l | tr -d ' '; }
+branch() { git -C "$1" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?'; }
+
+cmd_sync() {
+  _lock
+  local rc=0
+  while IFS=$'\t' read -r name url br kind; do
+    if [ ! -d "$REPO_DIR/$name/.git" ]; then
+      echo "${B}clone${N} $name ${D}($br)${N}"
+      mkdir -p "$REPO_DIR"
+      git clone --quiet --branch "$br" "$url" "$REPO_DIR/$name" \
+        || { echo "  ${R}failed${N} — check SSH access to $url" >&2; rc=1; continue; }
+      [ "$kind" = "knowledge" ] && git -C "$REPO_DIR/$name" remote set-url --push origin READ-ONLY-IN-THIS-WORKSPACE
+      continue
+    fi
+    git -C "$REPO_DIR/$name" fetch --quiet --all --prune || { echo "  ${Y}fetch failed${N} $name" >&2; rc=1; continue; }
+    if [ "$kind" = "knowledge" ]; then
+      # Knowledge repos must never go stale: fast-forward to the tracked branch.
+      # Skipped when dirty or off-branch so local work is never clobbered.
+      # Read-only mirror: keep the push URL disabled even on repos cloned earlier.
+      git -C "$REPO_DIR/$name" remote set-url --push origin READ-ONLY-IN-THIS-WORKSPACE
+      local cur; cur="$(branch "$REPO_DIR/$name")"
+      if [ "$(dirty "$REPO_DIR/$name")" != "0" ]; then
+        echo "${R}DIRTY${N} $name — read-only here, yet it has local changes."
+        echo "      Nothing was discarded. Move the work to a separate $name checkout,"
+        echo "      open an MR there, then: git -C $name checkout . && ./scripts/ws sync"
+        rc=1
+      elif [ "$cur" != "$br" ]; then
+        echo "${Y}warn${N}  $name — on '$cur', expected '$br'; not fast-forwarded"
+      elif git -C "$REPO_DIR/$name" merge --ff-only "origin/$br" --quiet 2>/dev/null; then
+        echo "${G}ok${N}    $name ${D}(up to date with origin/$br)${N}"
+      else
+        echo "${R}DIVERGED${N} $name — read-only here, yet it has commits not on origin/$br."
+        echo "      Nothing was discarded. Push them from a separate $name checkout, then re-sync."
+        rc=1
+      fi
+    else
+      # Code repos: fetch only. Your branch and working tree are never touched.
+      echo "${G}ok${N}    $name ${D}(fetched; on '$(branch "$REPO_DIR/$name")', left alone)${N}"
+    fi
+  done < <(repos)
+  return $rc
+}
+
+cmd_doctor() {
+  local missing=0
+  while IFS=$'\t' read -r name url br kind; do
+    if [ ! -d "$REPO_DIR/$name/.git" ]; then
+      echo "${R}MISSING${N} $name — run ${B}./scripts/ws sync${N}"; missing=1; continue
+    fi
+    local extra=""
+    if [ "$kind" = "knowledge" ]; then
+      local behind; behind="$(git -C "$REPO_DIR/$name" rev-list --count "HEAD..origin/$br" 2>/dev/null || echo 0)"
+      local days;   days="$(( ( $(date +%s) - $(git -C "$REPO_DIR/$name" log -1 --format=%ct 2>/dev/null || date +%s) ) / 86400 ))"
+      [ "$behind" != "0" ] && extra=" ${Y}$behind commits behind origin/$br — run ws sync${N}"
+      extra="$extra ${D}(last commit ${days}d ago)${N}"
+    fi
+    echo "${G}ok${N}      $name ${D}[$kind]${N}$extra"
+  done < <(repos)
+  worktrees
+  [ "$missing" = "0" ] || return 1
+}
+
+# Worktrees (ws-implement / ws-direct / ws-explore): .worktrees/NNN_slug/<repo>,
+# .worktrees/direct_<slug>/<repo>, or .worktrees/explore_<slug>/<repo>
+# (older plans: .worktrees/NNN/<repo>). Informational only — flags junk (archived plan, nothing
+# unmerged, untracked folders, strays elsewhere).
+worktrees() {
+  local wt="$ROOT/.worktrees" header=0 known=" "
+  _wt_head() { [ "$header" = 1 ] || { echo "${B}worktrees${N}"; header=1; }; }
+  while IFS=$'\t' read -r name url br kind; do
+    [ -d "$REPO_DIR/$name/.git" ] || continue
+    git -C "$REPO_DIR/$name" worktree prune 2>/dev/null || true
+    local path="" wbr=""
+    while IFS= read -r line; do
+      case "$line" in
+        "worktree "*) path="${line#worktree }" ;;
+        "branch "*)   wbr="${line#branch refs/heads/}" ;;
+        "")
+          if [ -n "$path" ] && [ "$path" != "$ROOT/$REPO_DIR/$name" ]; then
+            _wt_head
+            known="$known$path "
+            local notes="" plan ahead d
+            if [[ "$path" == "$wt/"* ]]; then
+              plan="${path#"$wt/"}"; plan="${plan%%/*}"
+              { [ -d "plans/archived/$plan" ] || compgen -G "plans/archived/${plan}[_-]*" >/dev/null; } && notes="$notes ${Y}plan archived${N}"
+            else
+              notes="$notes ${Y}outside .worktrees/${N}"
+            fi
+            ahead="$(git -C "$path" rev-list --count "origin/$br..HEAD" 2>/dev/null || echo '?')"
+            [ "$ahead" = "0" ] && notes="$notes ${Y}nothing unmerged vs origin/$br${N}"
+            d="$(dirty "$path")"; [ "$d" != "0" ] && notes="$notes ${D}($d dirty)${N}"
+            echo "  ${path#"$ROOT/"} ${D}[${wbr:-detached}, +$ahead]${N}$notes"
+          fi
+          path=""; wbr="" ;;
+      esac
+    done < <(git -C "$REPO_DIR/$name" worktree list --porcelain; echo)
+  done < <(repos)
+  # Folders under .worktrees/ that no repo knows about are leftovers.
+  local dir
+  for dir in "$wt"/*/*/; do
+    [ -d "$dir" ] || continue
+    dir="${dir%/}"
+    [[ "$known" == *" $dir "* ]] && continue
+    _wt_head; echo "  ${dir#"$ROOT/"} ${R}not a registered worktree — junk${N}"
+  done
+  for dir in "$wt"/*/; do
+    [ -d "$dir" ] && [ -z "$(ls -A "$dir")" ] && { _wt_head; echo "  ${dir#"$ROOT/"} ${R}empty — junk${N}"; }
+  done
+  return 0
+}
+
+cmd_status() {
+  while IFS=$'\t' read -r name url br kind; do
+    [ -d "$REPO_DIR/$name/.git" ] || { printf "%-16s ${R}missing${N}\n" "$name"; continue; }
+    printf "%-16s %-14s %s dirty\n" "$name" "$(branch "$REPO_DIR/$name")" "$(dirty "$REPO_DIR/$name")"
+  done < <(repos)
+}
+
+cmd_foreach() {
+  while IFS=$'\t' read -r name url br kind; do
+    [ "$kind" = "code" ] || continue
+    [ -d "$REPO_DIR/$name/.git" ] || continue
+    echo "${B}== $name${N}"; ( cd "$REPO_DIR/$name" && "$@" )
+  done < <(repos)
+}
+
+case "${1:-doctor}" in
+  sync)    shift; cmd_sync "$@" ;;
+  doctor)  shift; cmd_doctor "$@" ;;
+  status)  shift; cmd_status "$@" ;;
+  foreach) shift; cmd_foreach "$@" ;;
+  *) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+esac

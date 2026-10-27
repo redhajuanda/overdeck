@@ -1,0 +1,49 @@
+# Subagent models for workspace skills (ws-plan, ws-direct, ws-explore, ws-implement, …).
+#
+# The skill picks the block that matches the tool running the main session:
+#   Claude Code → `claude`, Codex → `codex`.
+# A role under `roles:` overrides the defaults for that job only.
+# Change a model here; never hard-code one in a skill.
+
+subagents:
+  claude:
+    model: claude-sonnet-5-5   # exact model; the skill checks every subagent ran on it
+    effort: medium         # low | medium | high | xhigh | max
+  codex:
+    model: gpt-5.6-terra
+    effort: medium         # model_reasoning_effort: low | medium | high
+    sandbox: read-only     # recon never writes
+
+roles:
+  # ws-intent § 3: read-only feasibility probes while discussing an intent.
+  intent-probe:
+    max_parallel: 3        # one per repo
+    # claude: { model: claude-sonnet-5-5, effort: low }   # uncomment to override for this role
+    # codex:  { model: gpt-5.6-terra, effort: low }
+
+  # ws-plan step 2: one read-only code reader per repository.
+  repo-recon:
+    max_parallel: 3        # one per repo
+    # claude: { model: claude-sonnet-5-5, effort: high }   # uncomment to override for this role
+    # codex:  { model: gpt-5.6-terra, effort: high }
+
+  # ws-implement: one implementer per repository batch. Defaults = the blocks above
+  # (same model/effort as planning); override here to change implementation only.
+  repo-implement:
+    max_parallel: 3        # one per repo
+    # claude: { model: claude-sonnet-5-5, effort: high }
+    codex:
+      sandbox: workspace-write   # implementers write; only the sandbox differs from recon
+
+  # ws-implement § 7: one final read-only whole-change reviewer per plan (all repos + cross-repo).
+  # Skipped for changes ≤ ~300 lines (the main session reviews those itself).
+  change-review:
+    max_parallel: 3
+    claude: { model: claude-sonnet-5-5, effort: high }
+    codex:
+      sandbox: read-only
+
+  # ws-multi-implement: one shared pool for several plans. Caps implementers AND reviewers
+  # of all plans together; their models still come from repo-implement / change-review.
+  multi-implement:
+    max_parallel: 3
