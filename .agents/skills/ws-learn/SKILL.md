@@ -36,7 +36,7 @@ skip silently, say nothing.
    | How a feature works across repos | its note in `context/architecture/` (+ the index row) |
    | Users, surfaces, product wording, UI | `PRODUCT.md` / `DESIGN.md` |
    | A rule every agent in this workspace must follow | `AGENTS.md`, **outside** the `overdeck:begin/end` blocks |
-   | Models, effort, parallelism | `agents.yaml` |
+   | Models, effort, parallelism | `agents.yaml` for the team; one member's own preference → their `agents.local.yaml` (gitignored) |
    | A convention inside one app repo | that repo's `AGENTS.md` — **suggest only**: show the diff, the repo owns it |
    | A `ws-*` skill improvement **every** project would want | a `plans/ws-learnings.md` line tagged `upstream` (§ Upstream) |
 

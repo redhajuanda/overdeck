@@ -110,7 +110,7 @@ Questions that arrive close together are queued and still asked one at a time.
 
 ## 4. Run the pool
 
-Cap: `roles.multi-implement.max_parallel` from `agents.yaml`. It covers implementers **and**
+Cap: `roles.multi-implement.max_parallel` from `agents.yaml` (plus `agents.local.yaml` overrides, ws-implement § 3). It covers implementers **and**
 reviewers of all plans together. Models still come from `roles.repo-implement` /
 `roles.change-review` (ws-implement § 3).
 

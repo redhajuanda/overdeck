@@ -1,9 +1,17 @@
 # Subagent models for workspace skills (ws-plan, ws-direct, ws-explore, ws-implement, …).
 #
 # The skill picks the block that matches the tool running the main session:
-#   Claude Code → `claude`, Codex → `codex`.
+#   Claude Code → `claude`, Codex → `codex`, Cursor → `cursor`.
 # A role under `roles:` overrides the defaults for that job only.
 # Change a model here; never hard-code one in a skill.
+#
+# This file is the team default. Personal overrides go in `agents.local.yaml` (gitignored,
+# on your machine only): same shape, and any key it sets wins over this file, key by key.
+# Skills read this file, then that one. Example — a cheaper recon model just for you:
+#
+#   roles:
+#     repo-recon:
+#       claude: { model: claude-haiku-5-5, effort: medium }
 
 subagents:
   claude:
@@ -13,6 +21,10 @@ subagents:
     model: gpt-5.6-terra
     effort: medium         # model_reasoning_effort: low | medium | high
     sandbox: read-only     # recon never writes
+  cursor:
+    model: inherit         # inherit = the chat's model; or a Cursor model name to pin one
+                           # (no effort setting; Cursor may not honour a pinned model — the
+                           # skill reports which one it asked for)
 
 roles:
   # ws-intent § 3: read-only feasibility probes while discussing an intent.

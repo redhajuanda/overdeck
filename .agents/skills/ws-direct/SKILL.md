@@ -129,7 +129,7 @@ Open only the skills whose description matches this edit.
 - **One repo:** the main session implements in `$W/<repo>`. Don't spawn a subagent for a
   20-line fix — the warm-up costs more than the change.
 - **Two or more repos:** one subagent per repo, in parallel, same as ws-implement § 4.
-  Model from `agents.yaml` `roles.repo-implement`. Fill [`subagent-prompt.md`](subagent-prompt.md)
+  Model from `agents.yaml` `roles.repo-implement` (plus `agents.local.yaml` overrides, ws-implement § 3). Fill [`subagent-prompt.md`](subagent-prompt.md)
   (every placeholder; there is no plan.md to point at — paste the restated task). Cap
   `roles.repo-implement.max_parallel`.
 

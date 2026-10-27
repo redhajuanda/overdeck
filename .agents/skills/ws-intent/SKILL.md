@@ -101,8 +101,8 @@ blocked, and why.
 Several files, or you don't know where the code lives → dispatch a probe subagent.
 
 Dispatch:
-1. **Model** from `agents.yaml`: the block for the tool you run in (`subagents.claude` /
-   `subagents.codex`), then `roles.intent-probe` overrides. Never hard-code a model. Respect
+1. **Model** from `agents.yaml`, then `agents.local.yaml` if it exists (personal overrides, key by key — see the header of `agents.yaml`): the block for the tool you run in
+   (`subagents.claude` / `subagents.codex` / `subagents.cursor`), then `roles.intent-probe` overrides. Never hard-code a model. Respect
    its `max_parallel`.
 2. **Branch:** probes read each repo's default branch from `workspace.yaml` in
    `repositories/<repo>/` (run `./scripts/ws doctor` first; `./scripts/ws sync` if stale). An
@@ -116,6 +116,7 @@ Dispatch:
      `agents.yaml` ID; if not, tell the user.
    - Codex: native subagent tool, or
      `codex exec -m <model> -c model_reasoning_effort=<effort> -s read-only -C <workspace>/<repo> --skip-git-repo-check --ephemeral -o <scratch>/probe-<repo>.md - < <scratch>/probe-prompt-<repo>.md`.
+   - Cursor: its subagent tool, read-only, `model` from the `cursor` block (`inherit` = this chat's model).
 4. **Use the answer:** spot-check the one or two citations a decision rests on. Tell the user
    the finding in plain words and what it means for the options ("guests are not linked to a
    phone number today, so reminders by WhatsApp need that first — which makes the email-only
