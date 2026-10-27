@@ -3,7 +3,7 @@
 # `./scripts/ws upgrade` pulls template changes into the paths under `owned:` and into the
 # `<!-- overdeck:begin NAME -->` … `<!-- overdeck:end NAME -->` blocks of the files under
 # `blocks:`. Everything else (WORKFLOW.md, PRODUCT.md, workspace.yaml, agents.yaml,
-# .agents/overlays/, plans/, intents/, context/, text outside the blocks) is the project's,
+# .agents/overlays/, plans/, intents/, context/, sources/, text outside the blocks) is the project's,
 # and upgrades never touch it.
 #
 # In a project, never edit an owned path or a block: put the change in an overlay

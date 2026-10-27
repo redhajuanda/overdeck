@@ -17,6 +17,7 @@ overdeck/
 ├── .overdeck/           upstream.yaml: which files the template owns + the template commit
 ├── repositories/        app repos, cloned by `ws sync` (gitignored, never submodules)
 ├── intents/<member>/  plans/<member>/  context/architecture/
+├── sources/             material we were given (PRDs, MOMs, specs), kept as received
 ├── .agents/skills/      ws-intent → ws-plan → ws-implement → ws-archive,
 │                        ws-direct, ws-explore, ws-multi-implement, ws-learn
 └── .agents/overlays/    this project's additions to the ws-* skills
@@ -64,7 +65,7 @@ every file has one owner:
 |---|---|
 | `.agents/skills/`, `scripts/ws` | `WORKFLOW.md`, `PRODUCT.md`, `DESIGN.md`, `workspace.yaml`, `agents.yaml`, `members.yaml` |
 | the `<!-- overdeck:begin/end -->` blocks in `AGENTS.md` | the rest of `AGENTS.md` |
-| | `.agents/overlays/<skill>.md`, `plans/`, `intents/`, `context/` |
+| | `.agents/overlays/<skill>.md`, `plans/`, `intents/`, `context/`, `sources/` |
 
 The list lives in [`.overdeck/upstream.yaml`](.overdeck/upstream.yaml).
 

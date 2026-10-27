@@ -80,6 +80,7 @@ evidence number. Or "Not checked — no question depended on the code.">
 <For ws-plan, not for the human reader. Citations behind *What the code says*.>
 
 - [E1] `repositories/<repo>/path/to/file.ext` `Symbol()` — <what it shows> (<repo> `<branch>@<sha>`)
+- [S1] `sources/<topic>/<file>` — <what it says that shaped the intent>, or omit
 
 ## Changes
 

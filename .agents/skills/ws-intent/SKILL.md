@@ -49,7 +49,9 @@ tweaks), or ws-plan (needs tasks). `/ws-explore` is never this skill.
    separately from plans; refer to them as "intent rj-008".
 3. **Load context:** the product docs `WORKFLOW.md` § 3 names, and skim related active and
    archived intents and plans (`ls intents plans`) whose slug overlaps — the idea may already
-   have been discussed, rejected, or half-built.
+   have been discussed, rejected, or half-built. Check the `sources/README.md` index for
+   material on this topic (a PRD, MOM, spec, `project/` milestones) and read what matters;
+   cite it in the intent's *Evidence* as `[S1] sources/<path>`.
 4. **Restate the ask** to the user in 2–4 plain sentences, including what you think the real
    goal behind it is. Then start § 1.
 
