@@ -118,6 +118,7 @@ cmd_doctor() {
     echo "${G}ok${N}      $name ${D}[$kind]${N}$extra"
   done < <(repos)
   members_check
+  [ -f "$ROOT/agents.local.yaml" ] && echo "${D}note${N}    agents.local.yaml overrides agents.yaml for you (personal, gitignored)"
   worktrees
   template_drift
   [ "$missing" = "0" ] || return 1
