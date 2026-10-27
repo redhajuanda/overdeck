@@ -29,6 +29,12 @@ against a shared database, or touch any other repository.
 Name the files and symbols you already found. No open product choices — if you hit one, stop
 and report it.>
 
+## Lessons from past runs
+
+<every rule from `WORKFLOW.md` § 9 and `.agents/overlays/<skill>.md` that concerns this repo
+or this kind of work, pasted verbatim with its *why*. Omit the section when none applies.>
+These were learned the hard way in this workspace; follow them like the repo's AGENTS.md.
+
 ## Where you work
 
 - Worktree: `<abs worktree path>` on branch `<new-branch>` (based on `<source>@<sha>`). Work

@@ -152,8 +152,11 @@ The workspace learns by writing lessons into files the next session reads. It ne
 them into template-owned files, so upgrading the template stays a clean overwrite.
 
 - When the user corrects you, or a command, path, doc or assumption turns out wrong, record
-  it with the `ws-learn` skill (`.agents/skills/ws-learn/`) before you finish the task. Every
-  `ws-*` skill ends with this step; "remember this" / "catat ini" calls it directly.
+  it with the `ws-learn` skill (`.agents/skills/ws-learn/`) **right then**, in any session,
+  then carry on — not at the end, which is the step most often lost. Every `ws-*` skill also
+  ends with a sweep for anything missed; "remember this" / "catat ini" calls it directly.
+  Recording only counts if it reaches the agent that erred: subagents read their brief, not
+  this workspace, so briefs carry a *Lessons from past runs* slot.
 - Where a lesson goes: project facts → `WORKFLOW.md`; how a `ws-*` skill should behave in this
   project → `.agents/overlays/<skill>.md` (each skill reads its overlay first); how the system
   works (a term, an actor, a domain rule, a flow, an integration) → `context/`; a lasting

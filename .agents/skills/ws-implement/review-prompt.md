@@ -22,6 +22,12 @@ Plan: `<workspace>/plans/<code>/<NNN_slug>/plan.md` — *Glossary*,
 `<workspace>/context/architecture/contracts.md` (cross-repo boundary rules) and any accepted
 decision in `<workspace>/context/decisions/` the plan cites. <omit what is still a stub>
 
+## Lessons from past runs
+
+<every rule from `WORKFLOW.md` § 9 and `.agents/overlays/ws-implement.md` that names a
+mistake a reviewer can spot in code, pasted verbatim with its *why*. Omit when none applies.>
+Check the diff against these too; a repeat of one is a finding.
+
 ## What to review
 
 | Repo | Worktree | Diff command |

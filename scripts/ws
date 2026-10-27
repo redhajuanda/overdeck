@@ -8,6 +8,7 @@
 #   ws upgrade  pull overdeck template changes into the files it owns (--check: dry run,
 #               --init: record which template commit this workspace came from)
 #   ws whoami   this session's member code from members.yaml (-v: every field)
+#   ws template prints "template" in the overdeck template itself, "project" elsewhere
 #   ws find     plan|intent|backlog|decision <id, number or slug> — its path(s), active or archived
 #   ws next     plan|intent|backlog|decision — your next free ID, e.g. rj-043 (no network needed)
 #
@@ -121,7 +122,59 @@ cmd_doctor() {
   [ -f "$ROOT/agents.local.yaml" ] && echo "${D}note${N}    agents.local.yaml overrides agents.yaml for you (personal, gitignored)"
   worktrees
   template_drift
+  learnings
   [ "$missing" = "0" ] || return 1
+}
+
+# Doctor: is the learning loop healthy? (ws-learn skill). Informational only — flags a
+# ledger that needs consolidating, rules that recurred, overlays grown too long to read
+# cheaply, and paths in overlay / WORKFLOW.md § 9 rules that exist nowhere any more.
+LEARN_OPEN_MAX=40      # open lines in plans/ws-learnings.md before a consolidate
+OVERLAY_RULES_MAX=20   # rules per overlay; every run of that skill reads all of them
+learnings() {
+  local header=0 ledger="$ROOT/plans/ws-learnings.md" f n p
+  _ln_head() { [ "$header" = 1 ] || { echo "${B}learnings${N}"; header=1; }; }
+  if [ -f "$ledger" ]; then
+    n="$(grep -cE '^- .*status: (proposed|recommended|recurred)' "$ledger" || true)"
+    [ "$n" -gt "$LEARN_OPEN_MAX" ] && { _ln_head; echo "  ${Y}$n open lines${N} in plans/ws-learnings.md — consolidate (ws-learn)"; }
+    n="$(grep -cE '^- .*status: recurred' "$ledger" || true)"
+    [ "$n" -gt 0 ] && { _ln_head; echo "  ${Y}$n recurred${N} — a recorded rule did not prevent the mistake; fix where it lives (ws-learn § Record)"; }
+  fi
+  for f in "$ROOT"/.agents/overlays/*.md; do
+    [ -f "$f" ] && [ "$(basename "$f")" != README.md ] || continue
+    n="$(grep -cE '^[[:space:]]*- ' "$f" || true)"
+    [ "$n" -gt "$OVERLAY_RULES_MAX" ] && { _ln_head; echo "  ${Y}${f#"$ROOT/"}: $n rules${N} — consolidate (ws-learn)"; }
+  done
+  # Backticked tokens that look like paths: contain '/', no spaces or placeholders.
+  # A path is live if it exists at the root or inside any cloned repo.
+  while IFS=$'\t' read -r f p; do
+    p="${p%%:*}"; p="${p%/}"
+    [ -e "$ROOT/$p" ] && continue
+    compgen -G "$ROOT/$REPO_DIR/*/$p" >/dev/null && continue
+    _ln_head; echo "  ${D}maybe stale${N} ${f}: \`$p\` exists nowhere"
+  done < <(
+    { for f in "$ROOT"/.agents/overlays/*.md; do
+        [ -f "$f" ] && [ "$(basename "$f")" != README.md ] && awk -v f="${f#"$ROOT/"}" '{ print f "\t" $0 }' "$f"
+      done
+      [ -f "$ROOT/WORKFLOW.md" ] && awk '/^## 9\./ { on = 1; next } /^## / { on = 0 } on { print "WORKFLOW.md § 9\t" $0 }' "$ROOT/WORKFLOW.md"
+    } | awk -F'\t' '{ s = $2; while (match(s, /`[^` <>*$]+\/[^` <>*$]*`/)) {
+          t = substr(s, RSTART + 1, RLENGTH - 2); s = substr(s, RSTART + RLENGTH)
+          if (t !~ /^(https?:|\.\.?\/|~)/) print $1 "\t" t } }' | sort -u
+  )
+  return 0
+}
+
+# Template or project? Compares origin with `source:` in .overdeck/upstream.yaml, ignoring
+# the transport (ssh / https), user, `.git` and case — so any clone of the template counts.
+norm_url() { sed -E 's#^[a-z+]+://##; s#^[^@/]*@##; s#:#/#; s#\.git/?$##; s#/$##' <<<"$1" | tr 'A-Z' 'a-z'; }
+cmd_template() {
+  [ -f "$UPSTREAM" ] || { echo "ws: no .overdeck/upstream.yaml — not an overdeck workspace" >&2; exit 1; }
+  local src origin; src="$(up_key source)"; origin="$(git -C "$ROOT" remote get-url origin 2>/dev/null || true)"
+  if [ -n "$src" ] && [ -n "$origin" ] && [ "$(norm_url "$src")" = "$(norm_url "$origin")" ]; then
+    echo template
+  else
+    echo project
+  fi
 }
 
 # Worktrees (ws-implement / ws-direct / ws-explore): .worktrees/NNN_slug/<repo>,
@@ -519,7 +572,8 @@ case "${1:-doctor}" in
   foreach) shift; cmd_foreach "$@" ;;
   upgrade) shift; cmd_upgrade "$@" ;;
   whoami)  shift; cmd_whoami "$@" ;;
+  template) shift; cmd_template "$@" ;;
   find)    shift; cmd_find "$@" ;;
   next)    shift; cmd_next "$@" ;;
-  *) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+  *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
 esac

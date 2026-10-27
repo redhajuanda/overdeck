@@ -33,6 +33,9 @@ anything** — no file writes, no commits, no installs, no running the app. Read
 
 Use these words in your report; if the code uses a different name, give both.
 
+<If `WORKFLOW.md` § 9 or `.agents/overlays/ws-plan.md` holds a rule about reading this repo
+(a misleading file, a recon claim that proved false), paste it here verbatim. Otherwise omit.>
+
 ## Start here
 
 1. Read `<repo>/AGENTS.md` first (when present) and follow its rules and conventions; load a

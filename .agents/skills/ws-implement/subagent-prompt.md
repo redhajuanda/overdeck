@@ -33,6 +33,12 @@ Project-wide rules: `<workspace>/context/architecture/contracts.md` for anything
 crosses a repo boundary (error shape, IDs, time, casing); `<workspace>/context/glossary.md`
 for the domain words. <omit a file that is still a stub>
 
+## Lessons from past runs
+
+<every rule from `WORKFLOW.md` § 9 and `.agents/overlays/<skill>.md` that concerns this repo
+or this kind of work, pasted verbatim with its *why*. Omit the section when none applies.>
+These were learned the hard way in this workspace; follow them like the repo's AGENTS.md.
+
 ## Where you work
 
 - Worktree: `<abs worktree path>` on branch `<branch>` (based on `<base>@<sha>`). Work

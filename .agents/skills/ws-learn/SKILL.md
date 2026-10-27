@@ -11,16 +11,20 @@ files** — the paths under `owned:` in [`.overdeck/upstream.yaml`](../../../.ov
 and the `<!-- overdeck:begin … -->` blocks of the files under `blocks:`. `./scripts/ws upgrade`
 overwrites those; anything written there is lost or blocks the upgrade.
 
-**Template or project?** This repo is the template when `git remote get-url origin` is the
-`source:` in `.overdeck/upstream.yaml`. In the template, improving the skills is the point:
-edit them directly. Everywhere else, follow this file.
+**Template or project?** `./scripts/ws template` prints `template` or `project` (it compares
+`origin` with `source:` in `.overdeck/upstream.yaml`, ignoring ssh/https and `.git`). In the
+template, improving the skills is the point: edit them directly. Everywhere else, follow this file.
 
 ## Record — one lesson, ≤ 2 minutes
 
-Called by the user ("remember this", "catat ini") or as the last step of a `ws-*` skill.
-As a skill's last step, first ask yourself: *did the user correct me, did a command, path or
-doc turn out wrong, or did something cost a detour that a sentence would have saved?* No →
-skip silently, say nothing.
+**Record at the moment it happens**, not at the end: the user corrects you, a command, path
+or doc turns out wrong, a detour costs time that a sentence would have saved — record it
+right then, then carry on with the task. The end of a session is the step most often lost
+(context compacted, run failed, user gone). This holds in plain sessions too, not only
+inside a `ws-*` skill. Also called by the user ("remember this", "catat ini").
+
+The **last step of every `ws-*` skill is a sweep**, not the main capture: anything from this
+run not yet recorded? No → skip silently, say nothing.
 
 1. **Is it worth keeping?** Only if it rests on something that happened (a correction, a
    failure, a wrong doc), would plausibly change what the next session does, and isn't
@@ -53,19 +57,29 @@ skip silently, say nothing.
 3. **Write it** as one or two lines in the target's own style, with the reason:
    `- <rule> (why: <date>, <what happened>)`. Prefer deleting or tightening a wrong line to
    adding a new one.
-4. **Log it** in `plans/ws-learnings.md`:
-   `- YYYY-MM-DD · <source: NNN | direct | explore | plan | intent | user> · <lesson> · → <target> · status: applied`
+4. **Log it** in `plans/ws-learnings.md`, in the one line format its header gives:
+   `- YYYY-MM-DD · <source> · <lesson> · → <target> · status: applied`
    (`status: proposed` for suggest-only targets; add ` · upstream` when tagged). Seen
-   before → add the source to that line instead; a lesson from 2+ sources is `recommended`.
+   before → add the source to that line instead; a `proposed` lesson from 2+ sources is
+   `recommended`.
+   **Seen again after it was `applied` or `upstreamed` → the rule failed**, it is not a
+   pattern. Mark the line `status: recurred <date>` and fix the rule, not the count: move it
+   where the agent that made the mistake reads it (an implementer reads only its brief —
+   WORKFLOW.md § 9 / overlay rules reach it through the brief's *Lessons* slot), make it
+   sharper, or make it mechanical (a check, a script line). Then set it `applied` again with
+   the new target. Recurring twice → tell the user; the rule may be wrong.
 5. **Ask or just do it?** Project-owned docs (`WORKFLOW.md`, overlays, `context/` notes except
    decisions, `ws-learnings.md`): write it, then tell the user in one line (`Learned: <rule> → <file>`).
    `AGENTS.md`, `PRODUCT.md`, `DESIGN.md`, `agents.yaml`, a new decision: show the line and ask first. An
    app repo's `AGENTS.md`: suggest only. Don't commit unless asked.
 
-## Consolidate — when asked, or when `ws-learnings.md` passes ~40 open lines
+## Consolidate — when asked, or when `ws doctor` says so (~40 open lines, an overlay over ~20 rules)
 
-1. Read `plans/ws-learnings.md`, every `.agents/overlays/*.md` and `WORKFLOW.md` § 9.
-2. Merge duplicates; mark lessons with 2+ sources `recommended`.
+1. Run `./scripts/ws doctor` (its *learnings* block counts open lines, oversized overlays
+   and paths rules name that no longer exist), then read `plans/ws-learnings.md`, every
+   `.agents/overlays/*.md` and `WORKFLOW.md` § 9.
+2. `recurred` lines first (§ Record step 4). Then merge duplicates; mark lessons with 2+
+   sources `recommended`.
 3. **Stale:** a rule naming a file, command or symbol that no longer exists (`rg` it in
    `repositories/`) → propose deleting it. Same for `context/` notes whose cited paths or
    symbols are gone → propose re-checking them and moving their `Checked against:` stamp.

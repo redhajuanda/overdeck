@@ -60,7 +60,9 @@ or event it should move next time. Prefer deleting or tightening a rule to addin
   skill in the template, or tagged `upstream` in a project. Never into a skill in a project.
 - (c) It would plausibly **move a named number or prevent a named event** next time.
 - (d) It isn't already covered by an existing rule or a `plans/ws-learnings.md` line. If it
-  is, add the plan number to that line instead of proposing it again.
+  is, add the plan number to that line instead of proposing it again — and if that line is
+  already `applied`, the rule failed: mark it `recurred` and propose fixing the rule
+  (where it lives, how it is worded, or a mechanical check) instead ([`ws-learn`](../ws-learn/SKILL.md) § *Record* step 4).
 
 If nothing passes, propose nothing: write "No changes proposed" under *Proposed changes* in
 `retro.md`, skip § 4's question to the user entirely, and still write the retro file.
@@ -75,10 +77,12 @@ If nothing passes, propose nothing: write "No changes proposed" under *Proposed 
    ## Waste              (axis — evidence — cause)
    ## Proposed changes   (file — change — expected effect; or "No changes proposed")
    ```
-2. Append one line per proposed change (only those that passed the § 2 bar) to `plans/ws-learnings.md`:
-   `- YYYY-MM-DD · NNN · <axis> · <change> · status: proposed`.
+2. Append one line per proposed change (only those that passed the § 2 bar) to
+   `plans/ws-learnings.md`, in the format its header gives:
+   `- YYYY-MM-DD · NNN · <change> · → <target file> · status: proposed · axis: <axis>`.
    If the same learning already exists there, add the plan number to it instead of a new line.
-   **A learning seen in 2+ runs is a pattern** — mark it `recommended`.
+   **A `proposed` learning seen in 2+ runs is a pattern** — mark it `recommended`; an
+   `applied` one seen again is `recurred`.
 
 ## 4. Ask, then apply
 

@@ -133,7 +133,9 @@ For every repo batch:
    AGENTS.md/CLAUDE.md and `.claude/skills` aren't reliably loaded for it. Listing them in the
    prompt is the only guarantee — in Claude Code and in Codex alike.
 2. Fill [`subagent-prompt.md`](subagent-prompt.md): every placeholder (including *Checks for this
-   repo*, pasted from `WORKFLOW.md` § 5 for that repo), task blocks pasted
+   repo*, pasted from `WORKFLOW.md` § 5 for that repo, and *Lessons from past runs* — the
+   `WORKFLOW.md` § 9 and overlay rules that concern this repo; the subagent reads nothing
+   else of this workspace, so a lesson left out never reaches it), task blocks pasted
    verbatim, worktree path, branch, the other repos' contract in one line each.
 3. Dispatch all ready batches **in one message**:
    - **Claude Code** — `Agent`, one call per repo: `subagent_type: "general-purpose"`,
@@ -204,7 +206,8 @@ git -C "$W/<repo>" diff --shortstat origin/<branch>...HEAD -- . <excludes: `WORK
 Fill [`review-prompt.md`](review-prompt.md): worktree paths and
 base refs (the reviewer runs `git diff` itself — never paste diffs into a brief), the
 *Contract as built* boundary list collected in § 5, the plan's *Edge cases* / *Acceptance* /
-*Rollout*, the `repo-context.sh` output for **each** touched repo, and anything § 5 noted. Model from
+*Rollout*, the `repo-context.sh` output for **each** touched repo, the *Lessons* a reviewer can
+check, and anything § 5 noted. Model from
 `roles.change-review`, passed the same way as in § 4. Reviewers are **read-only**.
 
 ## 8. One fix round

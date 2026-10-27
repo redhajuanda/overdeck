@@ -435,7 +435,7 @@ Then give the user: the plan path(s), a 3–5 line summary per plan (approach, r
 biggest risk), and the open questions that need their answer. Don't paste the whole plan.
 Don't commit unless asked.
 
-**Learn.** Last, run [`ws-learn`](../ws-learn/SKILL.md) § *Record*: a correction, a wrong command or doc, or a detour from this plan (e.g. a recon claim that proved false, a question the docs should have answered) gets one line in the right project file. Nothing → skip silently.
+**Learn.** Record lessons when they happen ([`ws-learn`](../ws-learn/SKILL.md) § *Record*). Last, sweep for what slipped through: a correction, a wrong command or doc, or a detour from this plan (e.g. a recon claim that proved false, a question the docs should have answered) gets one line in the right project file. Nothing → skip silently.
 
 ## Revising an existing plan
 

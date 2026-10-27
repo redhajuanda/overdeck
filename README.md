@@ -71,10 +71,15 @@ every file has one owner:
 
 The list lives in [`.overdeck/upstream.yaml`](.overdeck/upstream.yaml).
 
-- **Learning** — the `ws-learn` skill. Every `ws-*` skill ends by recording what went wrong
-  or what the user corrected; "remember this" calls it directly. It writes project facts to
-  `WORKFLOW.md` and project-specific skill rules to an overlay that the skill reads first.
-  It never edits a skill in a project.
+- **Learning** — the `ws-learn` skill. A correction or a wrong command/doc is recorded the
+  moment it happens, and every `ws-*` skill ends with a sweep for what slipped through;
+  "remember this" calls it directly. It writes project facts to `WORKFLOW.md` and
+  project-specific skill rules to an overlay that the skill reads first, and subagent briefs
+  carry the rules that concern them. It never edits a skill in a project.
+- **Closing the loop** — a lesson that recurs after it was applied is marked `recurred`: the
+  rule failed and gets moved or sharpened, not counted. `./scripts/ws doctor` flags recurred
+  lessons, a ledger or overlay that needs consolidating, and rules naming paths that no
+  longer exist. The ledger union-merges (`.gitattributes`), so members never conflict on it.
 - **Upstream** — a lesson every project would want is tagged `upstream` in
   `plans/ws-learnings.md`; `ws-learn upstream` opens a PR here with it.
 - **Upgrading** — in a project, `./scripts/ws upgrade --check`, then `./scripts/ws upgrade`.

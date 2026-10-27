@@ -149,7 +149,7 @@ would make you change course. Ask for agreement (`AskUserQuestion`: agree / chan
 On agreement set `Status: agreed · YYYY-MM-DD`. Suggest the next step: ws-plan with this intent.
 Don't commit unless asked.
 
-**Learn.** Last, run [`ws-learn`](../ws-learn/SKILL.md) § *Record*: a correction, a wrong command or doc, or a detour from this discussion (what we want belongs in `PRODUCT.md`; how the system works today in `context/`) gets one line in the right project file. Nothing → skip silently.
+**Learn.** Record lessons when they happen ([`ws-learn`](../ws-learn/SKILL.md) § *Record*). Last, sweep for what slipped through: a correction, a wrong command or doc, or a detour from this discussion (what we want belongs in `PRODUCT.md`; how the system works today in `context/`) gets one line in the right project file. Nothing → skip silently.
 
 ## Revising
 

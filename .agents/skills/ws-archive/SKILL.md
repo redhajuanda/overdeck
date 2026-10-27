@@ -75,7 +75,7 @@ is the plan's own worktrees (step 6), and only once they hold nothing unmerged.
    - Nothing affected → say so in the report and change nothing.
 9. **Report** the new path, what you changed (including any doc sync) and which worktrees you
    removed or kept. Do not commit unless asked.
-10. **Learn.** Last, run [`ws-learn`](../ws-learn/SKILL.md) § *Record*: a correction, a wrong command or doc, or a detour from this plan's life (what the plan got wrong that shipped differently) gets one line in the right project file. Nothing → skip silently.
+10. **Learn.** Record lessons when they happen ([`ws-learn`](../ws-learn/SKILL.md) § *Record*). Last, sweep for what slipped through: a correction, a wrong command or doc, or a detour from this plan's life (what the plan got wrong that shipped differently) gets one line in the right project file. Nothing → skip silently.
 
 ## Archiving an intent
 

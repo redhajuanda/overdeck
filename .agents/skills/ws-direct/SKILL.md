@@ -130,7 +130,8 @@ Open only the skills whose description matches this edit.
   20-line fix — the warm-up costs more than the change.
 - **Two or more repos:** one subagent per repo, in parallel, same as ws-implement § 4.
   Model from `agents.yaml` `roles.repo-implement` (plus `agents.local.yaml` overrides, ws-implement § 3). Fill [`subagent-prompt.md`](subagent-prompt.md)
-  (every placeholder; there is no plan.md to point at — paste the restated task). Cap
+  (every placeholder, including *Lessons from past runs*; there is no plan.md to point at —
+  paste the restated task). One repo, main session: read `WORKFLOW.md` § 9 yourself first. Cap
   `roles.repo-implement.max_parallel`.
 
 Stay inside the files the task needs. Match surrounding code. Don't drive-by refactor.
@@ -192,4 +193,4 @@ the deploy order of `WORKFLOW.md` § 7 (e.g. BE before FE). Failures or a still-
 PR → don't force-merge; tell the user. Don't merge unasked, and don't deploy anything
 beyond what merging into the source branch already does.
 
-**Learn.** Last, run [`ws-learn`](../ws-learn/SKILL.md) § *Record*: a correction, a wrong command or doc, or a detour from this change gets one line in the right project file. Nothing → skip silently.
+**Learn.** Record lessons when they happen ([`ws-learn`](../ws-learn/SKILL.md) § *Record*). Last, sweep for what slipped through: a correction, a wrong command or doc, or a detour from this change gets one line in the right project file. Nothing → skip silently.

@@ -184,7 +184,8 @@ When every plan is done, give the user **one** summary:
 [`retro.md`](../ws-implement/retro.md) in the first plan's folder covering all plans (metrics
 with that plan's `--plan`), and add a *Multi* axis: idle pool slots, stack rebases and
 conflicts, questions asked vs. decided. Every other plan's folder gets a one-line `retro.md`
-pointing to it. Learnings go to `plans/ws-learnings.md`, tagged `multi`.
+pointing to it. Learnings go to `plans/ws-learnings.md` with source `multi <id>+<id>…`
+(and `axis: multi` for the *Multi* findings).
 
 Push and open PRs only in § 6, after each plan's review and fix round. Never merge, deploy
 or remove worktrees unless the user asks.

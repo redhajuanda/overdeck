@@ -254,4 +254,4 @@ spec you wrote or updated and say it was **not run**.
 After push: PR link + worktree kept.
 After merge: worktree gone.
 
-**Learn.** Last, run [`ws-learn`](../ws-learn/SKILL.md) § *Record*: a correction, a wrong command or doc, or a detour from this session (run it after the push, and again after the merge if more came up) gets one line in the right project file. Nothing → skip silently.
+**Learn.** Record lessons when they happen ([`ws-learn`](../ws-learn/SKILL.md) § *Record*). Last, sweep for what slipped through: a correction, a wrong command or doc, or a detour from this session (run it after the push, and again after the merge if more came up) gets one line in the right project file. Nothing → skip silently.
