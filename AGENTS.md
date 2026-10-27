@@ -49,12 +49,12 @@ Repos are declared only in [`workspace.yaml`](workspace.yaml).
   themselves* ("use a cheaper model for me", "I want opus for planning"), write it to their
   `agents.local.yaml`, not `agents.yaml`. Change `agents.yaml` only when they say it is for
   the whole team. Tell them which file you changed.
-- **IDs.** Every intent, plan and backlog item a member creates is numbered with their own
-  prefix: plan `rj-042`, intent `rj-007`, backlog `rj-b003`. Each member counts on their own,
+- **IDs.** Every intent, plan, backlog item and decision a member creates is numbered with their own
+  prefix: plan `rj-042`, intent `rj-007`, backlog `rj-b003`, decision `rj-d002`. Each member counts on their own,
   so IDs never collide, offline or on separate branches. In the `ws-*` skills, **`NNN` means
   the full ID** (`rj-042`): folders `NNN_slug`, branches `feat/NNN-slug`, worktrees
-  `.worktrees/NNN_slug`. `./scripts/ws next plan|intent|backlog` gives your next ID;
-  `./scripts/ws find plan|intent|backlog <id, number or slug>` finds anyone's (your own first).
+  `.worktrees/NNN_slug`. `./scripts/ws next plan|intent|backlog|decision` gives your next ID;
+  `./scripts/ws find plan|intent|backlog|decision <id, number or slug>` finds anyone's (your own first).
   A bare number the user gives ("implement 042") means their own; if they have none and
   someone else does, ask.
 - **Their folders.** Intents in `intents/<code>/` (with `backlog/` and `archived/`), plans in
@@ -83,16 +83,24 @@ read** — and only via a real file read. Before working in a repo, read its `AG
 Workspace-level product and design live here, not in the repos. Read them before
 UI or product-facing copy work:
 
-- [`PRODUCT.md`](PRODUCT.md) — users, surfaces, principles, anti-references
+- [`PRODUCT.md`](PRODUCT.md) — what we want: users, surfaces, principles, anti-references
 - [`DESIGN.md`](DESIGN.md) — product UI
+
+How the product works today (terms, actors, domain rules) is in `context/`, below.
 
 <!-- overdeck:begin workflow -->
 <!-- Owned by the overdeck template: `./scripts/ws upgrade` replaces this block. Put project rules outside it. -->
-## Architecture notes — `context/architecture/`
+## Context — `context/`
 
-Cross-repo explanations of how a feature works end to end (FE + BE + infra), each stamped with
-the commits it was checked against. Read the matching note before planning or changing that
-area, and re-check the code for details. Index: [`context/architecture/README.md`](context/architecture/README.md).
+What no single repo tells you, written by us and pointing into the code (never copying it):
+`glossary.md` (one name per thing — plans and copy use these words), `actors.md` (roles and
+external systems, what each can do), `domain/` (a concept's states, rules, invariants),
+`architecture/` (`overview.md`, `contracts.md` for cross-repo boundary rules, one note per
+feature flow), `integrations/` (one per third party) and `decisions/` (ADRs, `rj-d001`, never
+rewritten — superseded). Notes that describe code carry a `Checked against:` stamp; re-check
+the code for details. Index and rules: [`context/README.md`](context/README.md); templates in
+`.agents/skills/ws-learn/templates/context/`. **`PRODUCT.md` says what we want; `context/` says
+what is.** Create a note when work first needs it, not ahead of time.
 
 ## Sources — `sources/`
 
@@ -147,8 +155,9 @@ them into template-owned files, so upgrading the template stays a clean overwrit
   it with the `ws-learn` skill (`.agents/skills/ws-learn/`) before you finish the task. Every
   `ws-*` skill ends with this step; "remember this" / "catat ini" calls it directly.
 - Where a lesson goes: project facts → `WORKFLOW.md`; how a `ws-*` skill should behave in this
-  project → `.agents/overlays/<skill>.md` (each skill reads its overlay first); how a feature
-  works → `context/architecture/`; product → `PRODUCT.md` / `DESIGN.md`; an improvement every
+  project → `.agents/overlays/<skill>.md` (each skill reads its overlay first); how the system
+  works (a term, an actor, a domain rule, a flow, an integration) → `context/`; a lasting
+  cross-repo choice → `context/decisions/`; what we want → `PRODUCT.md` / `DESIGN.md`; an improvement every
   project would want → a `plans/ws-learnings.md` line tagged `upstream`, sent to the template
   as a PR and pulled back with `./scripts/ws upgrade`.
 <!-- overdeck:end workflow -->

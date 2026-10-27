@@ -1,6 +1,6 @@
 ---
 name: ws-learn
-description: Record what this multi-repo workspace (repos declared in `workspace.yaml`) learned so the next session does better — routes each lesson to the right project-owned file (WORKFLOW.md, a skill overlay in .agents/overlays/, an architecture note, PRODUCT.md / DESIGN.md, AGENTS.md outside the template blocks), never into the template-owned `ws-*` skills, so `./scripts/ws upgrade` stays clean. Also consolidates the learnings (merge, promote, prune stale ones) and sends improvements every project would want upstream to the overdeck template as a PR. Use when the user says "remember this", "learn this", "note that", "catat ini", "ingat ini", "jangan ulangi", corrects how you worked, or asks to consolidate / clean up learnings or send them upstream. Every `ws-*` skill also calls § Record as its last step.
+description: Record what this multi-repo workspace (repos declared in `workspace.yaml`) learned so the next session does better — routes each lesson to the right project-owned file (WORKFLOW.md, a skill overlay in .agents/overlays/, a context/ note (glossary, actors, domain, architecture, integrations, decisions), PRODUCT.md / DESIGN.md, AGENTS.md outside the template blocks), never into the template-owned `ws-*` skills, so `./scripts/ws upgrade` stays clean. Also consolidates the learnings (merge, promote, prune stale ones) and sends improvements every project would want upstream to the overdeck template as a PR. Use when the user says "remember this", "learn this", "note that", "catat ini", "ingat ini", "jangan ulangi", corrects how you worked, or asks to consolidate / clean up learnings or send them upstream. Every `ws-*` skill also calls § Record as its last step.
 ---
 
 # ws-learn
@@ -33,8 +33,13 @@ skip silently, say nothing.
    |---|---|
    | A project fact: command, path, port, env var, tool quirk, branch, deploy rule | `WORKFLOW.md`, in the matching § (1–8); no § fits → § 9 *Lessons* |
    | How a `ws-*` skill should behave **in this project** | `.agents/overlays/<skill>.md` (create from the README example) |
-   | How a feature works across repos | its note in `context/architecture/` (+ the index row) |
-   | Users, surfaces, product wording, UI | `PRODUCT.md` / `DESIGN.md` |
+   | A domain word, or two words used for one thing | `context/glossary.md` |
+   | Who can do what; an external system that calls us or that we call | `context/actors.md` |
+   | A domain rule, state or invariant ("a paid order is never edited") | `context/domain/<concept>.md` |
+   | How a feature works across repos; a boundary rule (errors, IDs, time) | `context/architecture/<feature>.md` / `contracts.md` |
+   | A third party's quirk, webhook or failure mode | `context/integrations/<service>.md` |
+   | A lasting cross-repo choice the team made | a new `context/decisions/<prefix>-dNNN_<slug>.md` (`./scripts/ws next decision`) — ask first |
+   | What we want: users' goals, surfaces, principles, product wording, UI | `PRODUCT.md` / `DESIGN.md` |
    | A document or link to keep ("remember this PRD") — not a lesson | `sources/<topic>/` + a row in `sources/README.md` |
    | A rule every agent in this workspace must follow | `AGENTS.md`, **outside** the `overdeck:begin/end` blocks |
    | Models, effort, parallelism | `agents.yaml` for the team; one member's own preference → their `agents.local.yaml` (gitignored) |
@@ -42,7 +47,9 @@ skip silently, say nothing.
    | A `ws-*` skill improvement **every** project would want | a `plans/ws-learnings.md` line tagged `upstream` (§ Upstream) |
 
    Both a project rule and a general one? Write the overlay rule now (it helps today) and
-   also tag it `upstream`.
+   also tag it `upstream`. A `context/` note that doesn't exist yet → create it from
+   [`templates/context/`](templates/context/), fill only what you know, and add its row to the
+   `context/README.md` index.
 3. **Write it** as one or two lines in the target's own style, with the reason:
    `- <rule> (why: <date>, <what happened>)`. Prefer deleting or tightening a wrong line to
    adding a new one.
@@ -50,9 +57,9 @@ skip silently, say nothing.
    `- YYYY-MM-DD · <source: NNN | direct | explore | plan | intent | user> · <lesson> · → <target> · status: applied`
    (`status: proposed` for suggest-only targets; add ` · upstream` when tagged). Seen
    before → add the source to that line instead; a lesson from 2+ sources is `recommended`.
-5. **Ask or just do it?** Project-owned docs (`WORKFLOW.md`, overlays, architecture notes,
-   `ws-learnings.md`): write it, then tell the user in one line (`Learned: <rule> → <file>`).
-   `AGENTS.md`, `PRODUCT.md`, `DESIGN.md`, `agents.yaml`: show the line and ask first. An
+5. **Ask or just do it?** Project-owned docs (`WORKFLOW.md`, overlays, `context/` notes except
+   decisions, `ws-learnings.md`): write it, then tell the user in one line (`Learned: <rule> → <file>`).
+   `AGENTS.md`, `PRODUCT.md`, `DESIGN.md`, `agents.yaml`, a new decision: show the line and ask first. An
    app repo's `AGENTS.md`: suggest only. Don't commit unless asked.
 
 ## Consolidate — when asked, or when `ws-learnings.md` passes ~40 open lines
@@ -60,7 +67,8 @@ skip silently, say nothing.
 1. Read `plans/ws-learnings.md`, every `.agents/overlays/*.md` and `WORKFLOW.md` § 9.
 2. Merge duplicates; mark lessons with 2+ sources `recommended`.
 3. **Stale:** a rule naming a file, command or symbol that no longer exists (`rg` it in
-   `repositories/`) → propose deleting it.
+   `repositories/`) → propose deleting it. Same for `context/` notes whose cited paths or
+   symbols are gone → propose re-checking them and moving their `Checked against:` stamp.
 4. **Misplaced:** a § 9 lesson that belongs in a specific `WORKFLOW.md` § → move it; an
    overlay rule that is really general → tag it `upstream`.
 5. **Covered upstream:** after a `./scripts/ws upgrade`, an overlay rule the skill now says

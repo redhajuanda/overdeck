@@ -28,7 +28,11 @@ Trace a feature along this path, not file by file.
 
 ## 3. Product vocabulary & docs
 
-- Terms: **<term>** (<meaning>). The same words are used in plans.
+- Terms: [`context/glossary.md`](context/glossary.md). The same words are used in plans, intents and UI copy.
+- Who acts on the system and what they can do: [`context/actors.md`](context/actors.md).
+- Before planning: the [`context/README.md`](context/README.md) index — open the domain,
+  architecture, integration and decision notes on this topic, plus `architecture/contracts.md`
+  when the change crosses a repo boundary.
 - Read before UI or product-facing copy work: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](DESIGN.md).
 - Plan self-check extras: <e.g. compatibility with data saved before the change>.
 

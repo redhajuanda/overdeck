@@ -3,7 +3,7 @@
 # code      folder name for the member's intents and plans: intents/<code>/, plans/<code>/
 #           (lowercase, dots allowed, e.g. redha.juanda). Never change it once used.
 # prefix    2–3 lowercase letters, usually initials (rj), unique across members. Starts every
-#           ID the member creates: plans rj-042, intents rj-007, backlog rj-b003. Each member
+#           ID the member creates: plans rj-042, intents rj-007, backlog rj-b003, decisions rj-d002. Each member
 #           counts on their own, so IDs never collide — offline or on separate branches.
 #           Never change it once used.
 # emails    git user.email address(es) that identify the member, comma-separated.

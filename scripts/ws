@@ -8,8 +8,8 @@
 #   ws upgrade  pull overdeck template changes into the files it owns (--check: dry run,
 #               --init: record which template commit this workspace came from)
 #   ws whoami   this session's member code from members.yaml (-v: every field)
-#   ws find     plan|intent|backlog <id, number or slug> — its path(s), active or archived
-#   ws next     plan|intent|backlog — your next free ID, e.g. rj-043 (no network needed)
+#   ws find     plan|intent|backlog|decision <id, number or slug> — its path(s), active or archived
+#   ws next     plan|intent|backlog|decision — your next free ID, e.g. rj-043 (no network needed)
 #
 # Reads workspace.yaml, members.yaml and .overdeck/upstream.yaml. No dependencies beyond bash + git + awk.
 set -euo pipefail
@@ -436,26 +436,27 @@ cmd_whoami() {
   fi
 }
 
-# Paths of a plan / intent / backlog item by ID (rj-042, rj-b003), bare number (042, b003)
+# Paths of a plan / intent / backlog item / decision by ID (rj-042, rj-b003, rj-d002), bare number (042, b003, d002)
 # or slug fragment. Searches every member's folder, its archived/ (and backlog done/
 # cancelled/), and older layouts (plans/NNN_slug, intents/NNN_slug.md). The current
 # member's matches come first.
 cmd_find() {
   local kind="${1:-}" q="${2:-}" me
-  [ -n "$q" ] || { echo "usage: ws find plan|intent|backlog <id, number or slug>" >&2; return 1; }
+  [ -n "$q" ] || { echo "usage: ws find plan|intent|backlog|decision <id, number or slug>" >&2; return 1; }
   me="$(member_fields | awk -F'\t' '$1 == "prefix" { print $2 }')"
   case "$kind" in
     plan)    find plans -mindepth 1 -maxdepth 3 -type d -not -path '*/.*' 2>/dev/null ;;
     intent)  find intents -mindepth 1 -maxdepth 3 -type f -name '*.md' -not -path '*/backlog/*' 2>/dev/null ;;
     backlog) find intents -mindepth 2 -maxdepth 4 -type f -name '*.md' -path '*/backlog/*' 2>/dev/null ;;
-    *) echo "usage: ws find plan|intent|backlog <id, number or slug>" >&2; return 1 ;;
+    decision) find context/decisions -mindepth 1 -maxdepth 1 -type f -name '*.md' 2>/dev/null ;;
+    *) echo "usage: ws find plan|intent|backlog|decision <id, number or slug>" >&2; return 1 ;;
   esac | awk -v q="$(printf '%s' "$q" | tr '[:upper:]' '[:lower:]')" -v me="$me" -v kind="$kind" '
     {
       n = $0; sub(/.*\//, "", n); sub(/\.md$/, "", n)
-      id = (kind == "backlog") ? "^([a-z]+-)?b[0-9]+[_-]" : "^([a-z]+-)?[0-9]+[_-]"
+      id = (kind == "backlog") ? "^([a-z]+-)?b[0-9]+[_-]" : (kind == "decision") ? "^([a-z]+-)?d[0-9]+[_-]" : "^([a-z]+-)?[0-9]+[_-]"
       if (n !~ id) next
-      if (q ~ /^[a-z]+-b?[0-9]+$/)  ok = index(n, q) == 1 && substr(n, length(q) + 1, 1) ~ /[_-]/
-      else if (q ~ /^b?[0-9]+$/)    ok = n ~ ("^([a-z]+-)?" q "[_-]")
+      if (q ~ /^[a-z]+-[bd]?[0-9]+$/)  ok = index(n, q) == 1 && substr(n, length(q) + 1, 1) ~ /[_-]/
+      else if (q ~ /^[bd]?[0-9]+$/)    ok = n ~ ("^([a-z]+-)?" q "[_-]")
       else                          ok = index(n, q) > 0
       if (ok) print ((me != "" && index(n, me "-") == 1) ? 0 : 1) "\t" $0
     }' | sort | cut -f2-
@@ -472,13 +473,15 @@ cmd_next() {
     plan)    dir=plans;   re="(^|/)$prefix-[0-9]{3}[_-]" ;;
     intent)  dir=intents; re="(^|/)$prefix-[0-9]{3}[_-]" ;;
     backlog) dir=intents; re="/$prefix-b[0-9]{3}[_-]" ;;
-    *) echo "usage: ws next plan|intent|backlog" >&2; return 1 ;;
+    decision) dir=context/decisions; re="/$prefix-d[0-9]{3}[_-]" ;;
+    *) echo "usage: ws next plan|intent|backlog|decision" >&2; return 1 ;;
   esac
   local top
   top="$( { git -C "$ROOT" log --all --name-only --format= -- "$dir" 2>/dev/null; find "$dir" 2>/dev/null; } \
           | { [ "$kind" = intent ] && grep -v '/backlog/' || cat; } \
-          | grep -oE "$re" | sed "s/.*$prefix-b\{0,1\}//" | tr -dc '0-9\n' | sed 's/^0*//' | grep . | sort -n | tail -1 || true)"
-  printf '%s-%s%03d\n' "$prefix" "$([ "$kind" = backlog ] && echo b)" "$(( ${top:-0} + 1 ))"
+          | grep -oE "$re" | sed "s/.*$prefix-[bd]\{0,1\}//" | tr -dc '0-9\n' | sed 's/^0*//' | grep . | sort -n | tail -1 || true)"
+  local letter=""; case "$kind" in backlog) letter=b ;; decision) letter=d ;; esac
+  printf '%s-%s%03d\n' "$prefix" "$letter" "$(( ${top:-0} + 1 ))"
 }
 
 members_check() {

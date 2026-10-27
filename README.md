@@ -12,11 +12,13 @@ overdeck/
 ├── workspace.yaml       the repos — the only place they're declared
 ├── agents.yaml          subagent models per role (agents.local.yaml: your own, gitignored)
 ├── members.yaml         who works here: code, ID prefix, git emails, language, tone
-├── PRODUCT.md, DESIGN.md
+├── PRODUCT.md, DESIGN.md what we want: users, principles, UI
 ├── scripts/ws           sync | doctor | status | foreach | upgrade
 ├── .overdeck/           upstream.yaml: which files the template owns + the template commit
 ├── repositories/        app repos, cloned by `ws sync` (gitignored, never submodules)
-├── intents/<member>/  plans/<member>/  context/architecture/
+├── intents/<member>/  plans/<member>/
+├── context/            how it works today: glossary, actors, domain, architecture,
+│                        integrations, decisions (ADRs)
 ├── sources/             material we were given (PRDs, MOMs, specs), kept as received
 ├── .agents/skills/      ws-intent → ws-plan → ws-implement → ws-archive,
 │                        ws-direct, ws-explore, ws-multi-implement, ws-learn
@@ -54,7 +56,7 @@ branches, never take the same number, with no server to coordinate. `./scripts/w
 | Several plans | `ws-multi-implement` |
 | Small and clear | `ws-direct` — worktree, commit, PR |
 | A session of UI/copy tweaks, push later | `ws-explore` |
-| Done | `ws-archive` — archive the plan, update architecture notes + PRODUCT.md |
+| Done | `ws-archive` — archive the plan, sync `context/` with what shipped, offer an ADR |
 
 ## Learning and upgrading
 

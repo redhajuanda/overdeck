@@ -1,6 +1,6 @@
 ---
 name: ws-archive
-description: Archive a finished or abandoned plan in this multi-repo workspace (repos declared in `workspace.yaml`) — moves plans/<member>/NNN_slug/ to plans/<member>/archived/NNN_slug/ (creating the folder if needed), marks its status, updates context/architecture notes and PRODUCT.md with what the plan shipped, and removes its .worktrees/NNN_slug worktrees once nothing in them is unmerged. Also archives intents (intents/<member>/NNN_slug.md → intents/<member>/archived/) once all their plans are archived, or when abandoned. Use when the user asks to archive, shelve, close out or "arsipkan" a plan or intent, a plan number ("archive 042", "archive intent 007"), or all done plans.
+description: Archive a finished or abandoned plan in this multi-repo workspace (repos declared in `workspace.yaml`) — moves plans/<member>/NNN_slug/ to plans/<member>/archived/NNN_slug/ (creating the folder if needed), marks its status, syncs context/ (actors, domain, architecture, integrations, glossary) with what the plan shipped and offers lasting decisions as ADRs in context/decisions/, and removes its .worktrees/NNN_slug worktrees once nothing in them is unmerged. Also archives intents (intents/<member>/NNN_slug.md → intents/<member>/archived/) once all their plans are archived, or when abandoned. Use when the user asks to archive, shelve, close out or "arsipkan" a plan or intent, a plan number ("archive 042", "archive intent 007"), or all done plans.
 ---
 
 # ws-archive
@@ -52,14 +52,27 @@ is the plan's own worktrees (step 6), and only once they hold nothing unmerged.
    the `Status:` line or the plan, else `gh pr list --repo <owner/name> --state merged
    --head feat/NNN-slug`) and read each diff (`gh pr diff <n> --repo <owner/name>`) — skim for
    behaviour, don't re-review.
-   - **Architecture notes:** if a note in `context/architecture/README.md` covers an area the
-     diff touches, fix what the diff made wrong or incomplete in that note and move its
-     "Checked against" commit for that repo to the merge commit. Don't create new notes here.
-   - **`PRODUCT.md`:** if the change alters what it describes (surfaces, users, flows,
-     features, principles), update it. Move its "Checked against" stamp for that repo only when
-     nothing else landed between the old stamp and the merge
-     (`git -C repositories/<repo> log --oneline <stamp>..<merge>`); otherwise leave the stamp.
-   - Neither affected → say so in the report and change nothing.
+   - **`context/` notes** (index: `context/README.md`): for each stamped note — `actors.md`,
+     `domain/`, `architecture/` (incl. `overview.md` and `contracts.md`), `integrations/` —
+     whose area the diff touches, fix what the diff made wrong or incomplete. Move its
+     `Checked against:` commit for that repo to the merge commit only when nothing else landed
+     between the old stamp and the merge (`git -C repositories/<repo> log --oneline
+     <stamp>..<merge>`); otherwise leave the stamp. A new actor, external service or core
+     concept the plan introduced and no note covers → create its note from
+     `.agents/skills/ws-learn/templates/context/` and add an index row; don't write notes for
+     areas the plan didn't touch.
+   - **Glossary:** add the plan's *Glossary* terms that are domain words (not one-off code
+     names) to `context/glossary.md`; fix a row the change made wrong.
+   - **Decisions:** for each plan *Decision* marked `(lasting)`, or one that plainly binds future
+     work across repos, offer an ADR (AskUserQuestion, multiSelect, one option per decision). For
+     each chosen: `./scripts/ws next decision`, write `context/decisions/<id>_<slug>.md` from the
+     template (`From:` this plan; context and alternatives from the plan), add its index row. One
+     that replaces an earlier ADR: set the old one's `Status: superseded · YYYY-MM-DD` and
+     `Superseded by:` — the only edit an accepted ADR ever gets.
+   - **`PRODUCT.md`** says what we *want*, so it rarely follows a diff: touch it only when the
+     plan added or removed a surface or user role, or the user changed a principle. Show the
+     edit and ask first.
+   - Nothing affected → say so in the report and change nothing.
 9. **Report** the new path, what you changed (including any doc sync) and which worktrees you
    removed or kept. Do not commit unless asked.
 10. **Learn.** Last, run [`ws-learn`](../ws-learn/SKILL.md) § *Record*: a correction, a wrong command or doc, or a detour from this plan's life (what the plan got wrong that shipped differently) gets one line in the right project file. Nothing → skip silently.
