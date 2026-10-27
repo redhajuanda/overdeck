@@ -1,9 +1,20 @@
 # overdeck
 
-A template for an **agent workspace** that sits *above* several independent app repos
+**A self-learning agent workspace for multi-repo projects.**
+
+overdeck is a template for a workspace that sits *above* several independent app repos
 (frontend, backend, …) and coordinates them: product docs, cross-repo plans, and a set of
 agent skills that take work from idea to merged PRs. Works with Claude Code, Codex and Cursor
 (`AGENTS.md` + `.agents/skills/`).
+
+**It gets better every time you use it.** When an agent is corrected, hits a wrong command or
+takes a detour, it writes the lesson where the next session will read it: a project fact in
+`WORKFLOW.md`, a rule in the skill's overlay, a domain rule in `context/`. Subagents get the
+rules that concern them in their brief. After every implementation, a retro measures the run
+(time, tokens, rework) and proposes small fixes. A lesson that comes back after it was applied
+is treated as a failed rule and rewritten, not just counted. Lessons every project would want
+go back to this template as a PR, and `ws upgrade` brings them to every workspace without
+touching what the project learned itself. → [Self-learning](#self-learning-and-upgrading)
 
 ```
 overdeck/
@@ -13,7 +24,7 @@ overdeck/
 ├── agents.yaml          subagent models per role (agents.local.yaml: your own, gitignored)
 ├── members.yaml         who works here: code, ID prefix, git emails, language, tone
 ├── PRODUCT.md, DESIGN.md what we want: users, principles, UI
-├── scripts/ws           sync | doctor | status | foreach | upgrade
+├── scripts/ws           sync | doctor | status | foreach | upgrade | template
 ├── .overdeck/           upstream.yaml: which files the template owns + the template commit
 ├── repositories/        app repos, cloned by `ws sync` (gitignored, never submodules)
 ├── intents/<member>/  plans/<member>/
@@ -22,7 +33,8 @@ overdeck/
 ├── sources/             material we were given (PRDs, MOMs, specs), kept as received
 ├── .agents/skills/      ws-intent → ws-plan → ws-implement → ws-archive,
 │                        ws-direct, ws-explore, ws-multi-implement, ws-learn
-└── .agents/overlays/    this project's additions to the ws-* skills
+├── .agents/overlays/    what this project taught the ws-* skills
+└── plans/ws-learnings.md the learning ledger: every lesson, its source and status
 ```
 
 ## Start a new project
@@ -58,7 +70,7 @@ branches, never take the same number, with no server to coordinate. `./scripts/w
 | A session of UI/copy tweaks, push later | `ws-explore` |
 | Done | `ws-archive` — archive the plan, sync `context/` with what shipped, offer an ADR |
 
-## Learning and upgrading
+## Self-learning and upgrading
 
 A project workspace learns as it is used, and still takes template upgrades cleanly, because
 every file has one owner:
