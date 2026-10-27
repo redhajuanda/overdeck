@@ -95,6 +95,9 @@ Load context that applies — and only that:
   subagent for that repo reads it in full).
 - Product, design and schema docs that apply to this kind of work (`WORKFLOW.md` § 3).
 - Related prior plans: `ls plans/*/` (every member's) and skim any whose slug overlaps.
+- Outside material: the `sources/README.md` index — open only the rows on this topic (and
+  `project/` when timing or scope matters); list the ones the plan relies on in its
+  `Sources:` header line.
 
 ## 1b. Split into small plans — one per feature or CR
 

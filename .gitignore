@@ -24,3 +24,6 @@ node_modules/
 
 # Template clone used by `./scripts/ws upgrade` / `ws doctor`
 /.overdeck/cache/
+
+# Sensitive source material (contracts, personal data) — see sources/README.md
+/sources/private/
