@@ -5,8 +5,13 @@
 #   ws doctor   report what is missing or stale (incl. worktrees), exit non-zero if a repo is missing
 #   ws status   one line per repo: branch, dirty count, ahead/behind
 #   ws foreach  run a command in every code repo, e.g. ws foreach git fetch
+#   ws upgrade  pull overdeck template changes into the files it owns (--check: dry run,
+#               --init: record which template commit this workspace came from)
+#   ws whoami   this session's member code from members.yaml (-v: every field)
+#   ws find     plan|intent|backlog <id, number or slug> — its path(s), active or archived
+#   ws next     plan|intent|backlog — your next free ID, e.g. rj-043 (no network needed)
 #
-# Reads workspace.yaml. No dependencies beyond bash + git + awk.
+# Reads workspace.yaml, members.yaml and .overdeck/upstream.yaml. No dependencies beyond bash + git + awk.
 set -euo pipefail
 
 # Serialise concurrent runs: parallel agents calling `ws sync` would otherwise
@@ -112,7 +117,9 @@ cmd_doctor() {
     fi
     echo "${G}ok${N}      $name ${D}[$kind]${N}$extra"
   done < <(repos)
+  members_check
   worktrees
+  template_drift
   [ "$missing" = "0" ] || return 1
 }
 
@@ -138,7 +145,8 @@ worktrees() {
             local notes="" plan ahead d
             if [[ "$path" == "$wt/"* ]]; then
               plan="${path#"$wt/"}"; plan="${plan%%/*}"
-              { [ -d "plans/archived/$plan" ] || compgen -G "plans/archived/${plan}[_-]*" >/dev/null; } && notes="$notes ${Y}plan archived${N}"
+              { compgen -G "plans/*/archived/${plan}" >/dev/null || compgen -G "plans/archived/${plan}" >/dev/null \
+                || compgen -G "plans/archived/${plan}[_-]*" >/dev/null; } && notes="$notes ${Y}plan archived${N}"
             else
               notes="$notes ${Y}outside .worktrees/${N}"
             fi
@@ -165,6 +173,326 @@ worktrees() {
   return 0
 }
 
+# ── Template upgrade ──────────────────────────────────────────────────────────
+# .overdeck/upstream.yaml says which paths and AGENTS.md-style blocks the template owns,
+# and `base:` — the template commit this workspace matches. An upgrade applies only what the
+# template changed between `base` and its tip, and only where the local copy still equals
+# `base`. A local edit to a template-owned file is a conflict: nothing is written, the
+# edit has to move to an overlay or upstream first (ws-learn skill).
+UPSTREAM="$ROOT/.overdeck/upstream.yaml"
+CACHE="$ROOT/.overdeck/cache"
+
+up_key()  { awk -v k="$1" '$0 ~ "^"k":" { sub(/^[^:]*:[[:space:]]*/, ""); print; exit }' "$UPSTREAM"; }
+up_list() { awk -v k="$1" '
+  $0 ~ "^"k":" { on = 1; next }
+  /^[^[:space:]#]/ { on = 0 }
+  on && /^[[:space:]]+-[[:space:]]*/ { sub(/^[[:space:]]+-[[:space:]]*/, ""); sub(/[[:space:]]+#.*$/, ""); print }
+' "$UPSTREAM"; }
+
+# Is $1 under one of the owned paths?
+up_owned() {
+  local p
+  while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    [ "$1" = "$p" ] || [[ "$1" == "$p/"* ]] && return 0
+  done < <(up_list owned)
+  return 1
+}
+up_is_block_file() { up_list blocks | grep -qxF "$1"; }
+
+# Blob id of the working-tree file, "" when absent. Symlinks hash their target, like git.
+local_blob() {
+  if [ -L "$1" ]; then printf '%s' "$(readlink "$1")" | git hash-object --stdin
+  elif [ -f "$1" ]; then git hash-object "$1"
+  fi
+}
+tpl_blob() { git -C "$CACHE" rev-parse -q --verify "$1:$2" 2>/dev/null || true; }
+
+# Text of block $2 read from stdin (between the begin/end markers, markers excluded).
+block_text()  { awk -v n="$1" '$0 == "<!-- overdeck:end " n " -->" { f = 0 } f; $0 == "<!-- overdeck:begin " n " -->" { f = 1 }'; }
+block_names() { sed -n 's/^<!-- overdeck:begin \(.*\) -->$/\1/p'; }
+
+up_fetch() {
+  local src; src="$(up_key source)"
+  [ -n "$src" ] || { echo "ws: no 'source:' in .overdeck/upstream.yaml" >&2; exit 1; }
+  if [ -d "$CACHE/.git" ] || [ -f "$CACHE/HEAD" ]; then
+    git -C "$CACHE" fetch --quiet origin || { echo "ws: cannot fetch the template from $src" >&2; exit 1; }
+    git -C "$CACHE" remote set-head origin --auto >/dev/null 2>&1 || true
+  else
+    mkdir -p "$(dirname "$CACHE")"
+    git clone --quiet --bare "$src" "$CACHE" || { echo "ws: cannot clone the template from $src" >&2; exit 1; }
+    git -C "$CACHE" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+    git -C "$CACHE" fetch --quiet origin
+    git -C "$CACHE" remote set-head origin --auto >/dev/null 2>&1 || true
+  fi
+}
+
+set_base() {
+  local tmp; tmp="$(mktemp)"
+  awk -v b="$1" '/^base:/ && !done { print "base: " b; done = 1; next } { print }' "$UPSTREAM" > "$tmp"
+  cat "$tmp" > "$UPSTREAM"; rm -f "$tmp"
+}
+
+cmd_upgrade() {
+  local mode=apply forced_base=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --check) mode=check ;;
+      --init)  mode=init ;;
+      --base)  shift; forced_base="${1:-}" ;;
+      *) echo "usage: ws upgrade [--check] [--init [--base <template-sha>]]" >&2; exit 1 ;;
+    esac
+    shift
+  done
+  [ -f "$UPSTREAM" ] || { echo "ws: no .overdeck/upstream.yaml — not an overdeck workspace" >&2; exit 1; }
+  _lock
+  up_fetch
+
+  # The template repo itself shares history with the cache; it never upgrades from itself.
+  if git -C "$CACHE" cat-file -e "$(git rev-parse HEAD)^{commit}" 2>/dev/null; then
+    echo "ws: this is the overdeck template itself — nothing to upgrade from." >&2; exit 1
+  fi
+
+  local base; base="$(up_key base)"
+  if [ "$mode" = init ]; then
+    if [ -n "$forced_base" ]; then
+      base="$(git -C "$CACHE" rev-parse -q --verify "$forced_base^{commit}")" \
+        || { echo "ws: $forced_base is not a template commit" >&2; exit 1; }
+    else
+      # `gh repo create --template` copies the template tree into a fresh root commit:
+      # find the template commit with the same tree.
+      local tree; tree="$(git rev-parse "$(git rev-list --max-parents=0 HEAD | tail -1)^{tree}")"
+      base="$(git -C "$CACHE" log --all --format='%H %T' | awk -v t="$tree" '$2 == t { print $1; exit }')"
+      [ -n "$base" ] || { echo "ws: no template commit matches this workspace's first commit." >&2
+        echo "    Pass the one it was created from: ./scripts/ws upgrade --init --base <sha>" >&2; exit 1; }
+    fi
+    set_base "$base"
+    echo "${G}ok${N}    base set to ${base:0:12} — commit .overdeck/upstream.yaml"
+    return 0
+  fi
+  [ -n "$base" ] || { echo "ws: no 'base:' yet — run ./scripts/ws upgrade --init first" >&2; exit 1; }
+  git -C "$CACHE" cat-file -e "$base^{commit}" 2>/dev/null \
+    || { echo "ws: base $base is not in the template history" >&2; exit 1; }
+
+  local new; new="$(git -C "$CACHE" rev-parse origin/HEAD)"
+  if [ "$base" = "$new" ]; then echo "${G}ok${N}    already at the template tip (${new:0:12})"; return 0; fi
+  echo "${B}template${N} ${base:0:12} → ${new:0:12} ($(git -C "$CACHE" rev-list --count "$base..$new") commits)"
+  git -C "$CACHE" log --oneline --no-decorate "$base..$new" | sed 's/^/  /'
+
+  # Pass 1: decide every change; write nothing yet.
+  local -a writes=() deletes=() conflicts=() notes=() blockwrites=()
+  local st path b n l nm
+  local manifest_changed=0
+  while IFS=$'\t' read -r st path; do
+    if [ "$path" = .overdeck/upstream.yaml ]; then
+      manifest_changed=1; echo "  ${G}manifest${N} .overdeck/upstream.yaml (owned paths / blocks; keeps this workspace's source)"
+    elif up_owned "$path"; then
+      b="$(tpl_blob "$base" "$path")"; n="$(tpl_blob "$new" "$path")"; l="$(local_blob "$path")"
+      if [ "$l" = "$n" ]; then continue                                 # already there
+      elif [ "$l" = "$b" ]; then
+        if [ -n "$n" ]; then writes+=("$path"); else deletes+=("$path"); fi
+      elif [ -z "$l" ]; then notes+=("$path — deleted here, template changed it; left deleted")
+      else conflicts+=("$path")
+      fi
+    elif up_is_block_file "$path"; then
+      [ -f "$path" ] || { notes+=("$path — missing here; its template blocks were not applied"); continue; }
+      while IFS= read -r nm; do
+        local bt nt lt
+        bt="$(git -C "$CACHE" show "$base:$path" 2>/dev/null | block_text "$nm")"
+        nt="$(git -C "$CACHE" show "$new:$path" | block_text "$nm")"
+        lt="$(block_text "$nm" < "$path")"
+        if [ "$lt" = "$nt" ]; then continue
+        elif ! block_names < "$path" | grep -qxF "$nm"; then
+          notes+=("$path — new template block '$nm'; add it by hand (git -C .overdeck/cache show $new:$path)")
+        elif [ "$lt" = "$bt" ]; then blockwrites+=("$path	$nm")
+        else conflicts+=("$path (block '$nm')")
+        fi
+      done < <(git -C "$CACHE" show "$new:$path" | block_names)
+    else
+      notes+=("$path — project-owned; template changed it ($st), review: git -C .overdeck/cache diff ${base:0:12} ${new:0:12} -- $path")
+    fi
+  done < <(git -C "$CACHE" diff --no-renames --name-status "$base" "$new")
+
+  local x
+  for x in "${writes[@]}";      do echo "  ${G}update${N}   $x"; done
+  for x in "${deletes[@]}";     do echo "  ${Y}delete${N}   $x"; done
+  for x in "${blockwrites[@]}"; do echo "  ${G}block${N}    ${x%%$'\t'*} '${x#*$'\t'}'"; done
+  for x in "${notes[@]}";       do echo "  ${D}note${N}     $x"; done
+  for x in "${conflicts[@]}";   do echo "  ${R}CONFLICT${N} $x — edited here since ${base:0:12}"; done
+
+  if [ "${#conflicts[@]}" -gt 0 ]; then
+    echo
+    echo "Nothing written. Template-owned files were edited in this workspace. For each one:"
+    echo "  move the project-specific part to .agents/overlays/<skill>.md (or tag it 'upstream'"
+    echo "  in plans/ws-learnings.md — ws-learn skill), then restore the template version:"
+    echo "    file:  git -C .overdeck/cache show ${base:0:12}:<path> > <path>"
+    echo "    block: copy it back from git -C .overdeck/cache show ${base:0:12}:<path>"
+    echo "           (only the block — the text around it is the project's)"
+    echo "  and run ./scripts/ws upgrade again."
+    return 1
+  fi
+  if [ "$mode" = check ]; then echo; echo "dry run — nothing written"; return 0; fi
+
+  # Pass 2: apply.
+  local mode_bits tmp file
+  for x in "${writes[@]}"; do
+    mkdir -p "$(dirname "$x")"
+    mode_bits="$(git -C "$CACHE" ls-tree "$new" -- "$x" | awk '{ print $1 }')"
+    rm -f "$x"
+    if [ "$mode_bits" = 120000 ]; then ln -s "$(git -C "$CACHE" cat-file blob "$new:$x")" "$x"
+    else git -C "$CACHE" cat-file blob "$new:$x" > "$x"; [ "$mode_bits" = 100755 ] && chmod +x "$x"
+    fi
+  done
+  for x in "${deletes[@]}"; do rm -f "$x"; rmdir -p "$(dirname "$x")" 2>/dev/null || true; done
+  for x in "${blockwrites[@]}"; do
+    file="${x%%$'\t'*}"; nm="${x#*$'\t'}"
+    tmp="$(mktemp)"; git -C "$CACHE" show "$new:$file" | block_text "$nm" > "$tmp.block"
+    awk -v n="$nm" -v src="$tmp.block" '
+      $0 == "<!-- overdeck:begin " n " -->" { print; while ((getline l < src) > 0) print l; skip = 1; next }
+      $0 == "<!-- overdeck:end " n " -->"   { skip = 0 }
+      !skip
+    ' "$file" > "$tmp"
+    cat "$tmp" > "$file"; rm -f "$tmp" "$tmp.block"
+  done
+  if [ "$manifest_changed" = 1 ]; then
+    local src; src="$(up_key source)"
+    git -C "$CACHE" cat-file blob "$new:.overdeck/upstream.yaml" > "$UPSTREAM"
+    tmp="$(mktemp)"
+    awk -v s="$src" '/^source:/ && !done { print "source: " s; done = 1; next } { print }' "$UPSTREAM" > "$tmp"
+    cat "$tmp" > "$UPSTREAM"; rm -f "$tmp"
+  fi
+  set_base "$new"
+  echo
+  echo "${G}upgraded${N} to ${new:0:12}. Review with git diff, then commit:"
+  echo "  chore: upgrade overdeck template to ${new:0:12}"
+  echo "Overlay rules the template now covers can be deleted (ws-learn consolidate)."
+}
+
+# Doctor: template-owned files edited in this workspace (needs the cache from `ws upgrade`;
+# skipped quietly without it) and how far the template has moved on since `base`.
+template_drift() {
+  [ -f "$UPSTREAM" ] || return 0
+  local base; base="$(up_key base)"
+  [ -n "$base" ] && git -C "$CACHE" cat-file -e "$base^{commit}" 2>/dev/null || return 0
+  local header=0 path p nm
+  _td_head() { [ "$header" = 1 ] || { echo "${B}template${N} ${D}(base ${base:0:12})${N}"; header=1; }; }
+  while IFS= read -r p; do
+    while IFS= read -r path; do
+      [ "$(local_blob "$path")" = "$(tpl_blob "$base" "$path")" ] && continue
+      _td_head
+      if [ -e "$path" ] || [ -L "$path" ]; then
+        echo "  ${Y}edited here${N} $path — move it to an overlay or tag it upstream (ws-learn)"
+      else
+        echo "  ${D}deleted here${N} $path"
+      fi
+    done < <(git -C "$CACHE" ls-tree -r --name-only "$base" -- "$p")
+  done < <(up_list owned)
+  while IFS= read -r path; do
+    [ -f "$path" ] || continue
+    while IFS= read -r nm; do
+      [ "$(block_text "$nm" < "$path")" = "$(git -C "$CACHE" show "$base:$path" | block_text "$nm")" ] && continue
+      _td_head; echo "  ${Y}edited here${N} $path block '$nm' — move the change outside the block"
+    done < <(git -C "$CACHE" show "$base:$path" 2>/dev/null | block_names)
+  done < <(up_list blocks)
+  local behind; behind="$(git -C "$CACHE" rev-list --count "$base..origin/HEAD" 2>/dev/null || echo 0)"
+  [ "$behind" != "0" ] && { _td_head; echo "  ${Y}$behind template commits not applied${N} — ./scripts/ws upgrade --check"; }
+  return 0
+}
+
+# ── Members ───────────────────────────────────────────────────────────────────
+# members.yaml: everyone who works here. A member's intents and plans live under
+# intents/<code>/ and plans/<code>/ and are numbered with the member's own prefix
+# (rj-042), so IDs never collide across members or branches. The session's member is the
+# one whose `emails:` holds `git config user.email`.
+MEMBERS="$ROOT/members.yaml"
+
+# Print the matching member as "key<TAB>value" lines, or nothing.
+member_fields() {
+  [ -f "$MEMBERS" ] || return 0
+  local email; email="$(git -C "$ROOT" config user.email 2>/dev/null || true)"
+  [ -n "$email" ] || return 0
+  awk -v e="$(printf '%s' "$email" | tr '[:upper:]' '[:lower:]')" '
+    function val(l) { sub(/^[^:]*:[[:space:]]*/, "", l); sub(/[[:space:]]+#.*$/, "", l); return l }
+    function flush() { if (hit && !done) { done = 1; for (k in f) print k "\t" f[k]; exit } }
+    /^[[:space:]]*-[[:space:]]*code:/ { flush(); delete f; hit = 0; f["code"] = val($0); next }
+    /^[[:space:]]+[a-z_]+:/ && ("code" in f) {
+      k = $0; sub(/^[[:space:]]+/, "", k); sub(/:.*/, "", k); f[k] = val($0)
+      if (k == "emails") { n = split(tolower(f[k]), a, /[[:space:]]*,[[:space:]]*/); for (i = 1; i <= n; i++) if (a[i] == e) hit = 1 }
+    }
+    END { flush() }
+  ' "$MEMBERS"
+}
+
+cmd_whoami() {
+  local fields; fields="$(member_fields)"
+  if [ -z "$fields" ]; then
+    echo "ws: git user.email '$(git -C "$ROOT" config user.email 2>/dev/null || true)' is not in members.yaml" >&2
+    echo "    add yourself there (AGENTS.md § Members), or set it: git config user.email <you@…>" >&2
+    return 1
+  fi
+  if [ "${1:-}" = "-v" ]; then printf '%s\n' "$fields" | sort
+  else printf '%s\n' "$fields" | awk -F'\t' '$1 == "code" { print $2 }'
+  fi
+}
+
+# Paths of a plan / intent / backlog item by ID (rj-042, rj-b003), bare number (042, b003)
+# or slug fragment. Searches every member's folder, its archived/ (and backlog done/
+# cancelled/), and older layouts (plans/NNN_slug, intents/NNN_slug.md). The current
+# member's matches come first.
+cmd_find() {
+  local kind="${1:-}" q="${2:-}" me
+  [ -n "$q" ] || { echo "usage: ws find plan|intent|backlog <id, number or slug>" >&2; return 1; }
+  me="$(member_fields | awk -F'\t' '$1 == "prefix" { print $2 }')"
+  case "$kind" in
+    plan)    find plans -mindepth 1 -maxdepth 3 -type d -not -path '*/.*' 2>/dev/null ;;
+    intent)  find intents -mindepth 1 -maxdepth 3 -type f -name '*.md' -not -path '*/backlog/*' 2>/dev/null ;;
+    backlog) find intents -mindepth 2 -maxdepth 4 -type f -name '*.md' -path '*/backlog/*' 2>/dev/null ;;
+    *) echo "usage: ws find plan|intent|backlog <id, number or slug>" >&2; return 1 ;;
+  esac | awk -v q="$(printf '%s' "$q" | tr '[:upper:]' '[:lower:]')" -v me="$me" -v kind="$kind" '
+    {
+      n = $0; sub(/.*\//, "", n); sub(/\.md$/, "", n)
+      id = (kind == "backlog") ? "^([a-z]+-)?b[0-9]+[_-]" : "^([a-z]+-)?[0-9]+[_-]"
+      if (n !~ id) next
+      if (q ~ /^[a-z]+-b?[0-9]+$/)  ok = index(n, q) == 1 && substr(n, length(q) + 1, 1) ~ /[_-]/
+      else if (q ~ /^b?[0-9]+$/)    ok = n ~ ("^([a-z]+-)?" q "[_-]")
+      else                          ok = index(n, q) > 0
+      if (ok) print ((me != "" && index(n, me "-") == 1) ? 0 : 1) "\t" $0
+    }' | sort | cut -f2-
+}
+
+# Next free number for the current member: highest <prefix>-NNN in git history (all local
+# and fetched branches) or the working tree, + 1. Prefixes are per member, so two members
+# never collide, offline or not.
+cmd_next() {
+  local kind="${1:-}" dir re prefix
+  prefix="$(member_fields | awk -F'\t' '$1 == "prefix" { print $2 }')"
+  [ -n "$prefix" ] || { echo "ws: no prefix for you in members.yaml (ws whoami -v)" >&2; return 1; }
+  case "$kind" in
+    plan)    dir=plans;   re="(^|/)$prefix-[0-9]{3}[_-]" ;;
+    intent)  dir=intents; re="(^|/)$prefix-[0-9]{3}[_-]" ;;
+    backlog) dir=intents; re="/$prefix-b[0-9]{3}[_-]" ;;
+    *) echo "usage: ws next plan|intent|backlog" >&2; return 1 ;;
+  esac
+  local top
+  top="$( { git -C "$ROOT" log --all --name-only --format= -- "$dir" 2>/dev/null; find "$dir" 2>/dev/null; } \
+          | { [ "$kind" = intent ] && grep -v '/backlog/' || cat; } \
+          | grep -oE "$re" | sed "s/.*$prefix-b\{0,1\}//" | tr -dc '0-9\n' | sed 's/^0*//' | grep . | sort -n | tail -1 || true)"
+  printf '%s-%s%03d\n' "$prefix" "$([ "$kind" = backlog ] && echo b)" "$(( ${top:-0} + 1 ))"
+}
+
+members_check() {
+  if [ ! -f "$MEMBERS" ]; then echo "${Y}warn${N}    no members.yaml — see BOOTSTRAP.md"; return 0; fi
+  local dup; dup="$(awk '/^[[:space:]]+prefix:/ { sub(/^[^:]*:[[:space:]]*/, ""); sub(/[[:space:]]+#.*$/, ""); print }' "$MEMBERS" | sort | uniq -d)"
+  [ -z "$dup" ] || echo "${R}members${N} prefix used by two members: $dup — IDs would collide; give one a new prefix"
+  awk '/^[[:space:]]*-[[:space:]]*code:/ { if (c != "" && !p) print c; c = $0; sub(/^[^:]*:[[:space:]]*/, "", c); p = 0 }
+       /^[[:space:]]+prefix:[[:space:]]*[a-z]/ { p = 1 }
+       END { if (c != "" && !p) print c }' "$MEMBERS" | while read -r c; do
+    echo "${Y}warn${N}    member $c has no prefix in members.yaml"
+  done
+  member_fields | grep -q . && return 0
+  echo "${Y}warn${N}    git user.email '$(git -C "$ROOT" config user.email 2>/dev/null || true)' is not in members.yaml — the agent will offer to add you"
+}
+
 cmd_status() {
   while IFS=$'\t' read -r name url br kind; do
     [ -d "$REPO_DIR/$name/.git" ] || { printf "%-16s ${R}missing${N}\n" "$name"; continue; }
@@ -185,5 +513,9 @@ case "${1:-doctor}" in
   doctor)  shift; cmd_doctor "$@" ;;
   status)  shift; cmd_status "$@" ;;
   foreach) shift; cmd_foreach "$@" ;;
-  *) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+  upgrade) shift; cmd_upgrade "$@" ;;
+  whoami)  shift; cmd_whoami "$@" ;;
+  find)    shift; cmd_find "$@" ;;
+  next)    shift; cmd_next "$@" ;;
+  *) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
 esac

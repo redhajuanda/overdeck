@@ -1,7 +1,7 @@
 # Backlog — <Title>
 
 Status: backlog · YYYY-MM-DD
-<!-- later: `picked up · YYYY-MM-DD → intents/NNN_slug.md` or `cancelled · YYYY-MM-DD — <reason>` -->
+<!-- later: `picked up · YYYY-MM-DD → intents/<code>/NNN_slug.md` or `cancelled · YYYY-MM-DD — <reason>` -->
 
 ## The idea
 

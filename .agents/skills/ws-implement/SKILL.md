@@ -1,9 +1,14 @@
 ---
 name: ws-implement
-description: Implement a plan from plans/NNN_slug/plan.md in this multi-repo workspace (repos declared in `workspace.yaml`) — dispatches one implementer subagent per repository in git worktrees, each briefed with its repo's AGENTS.md and skill descriptions, checks the cross-repo contracts, runs one final code review of the whole change, ticks tasks off, then commits, pushes and opens a PR per repo into the plan's source branch. Use when the user asks to implement, build, execute, ship or "kerjakan" a plan, a plan number ("implement 042"), or the next tasks of a plan. Also use to resume a half-implemented plan.
+description: Implement a plan from plans/<member>/NNN_slug/plan.md in this multi-repo workspace (repos declared in `workspace.yaml`) — dispatches one implementer subagent per repository in git worktrees, each briefed with its repo's AGENTS.md and skill descriptions, checks the cross-repo contracts, runs one final code review of the whole change, ticks tasks off, then commits, pushes and opens a PR per repo into the plan's source branch. Use when the user asks to implement, build, execute, ship or "kerjakan" a plan, a plan number ("implement 042"), or the next tasks of a plan. Also use to resume a half-implemented plan.
 ---
 
 # ws-implement
+
+> **Project overlay.** If `.agents/overlays/ws-implement.md` exists, read it before anything else: its
+> rules are this project's additions to this skill and win where they conflict. Pass the ones
+> that concern a subagent into its brief. Never edit this skill in a project — lessons go
+> through [`ws-learn`](../ws-learn/SKILL.md).
 
 The plan already did the thinking: it names the files, the contracts and a Verify per task.
 So implementing is mostly **routing and review**, and the fast, cheap, correct way is:
@@ -21,7 +26,8 @@ imported) → one parallel review → one parallel fix round → finish.
 
 ## 0. Preconditions
 
-1. Find the plan: `plans/NNN_*/plan.md` (ask only if the number is ambiguous). Read it fully —
+1. Find the plan: `./scripts/ws find plan <id, number or slug>` → `plans/<code>/NNN_slug/plan.md`
+   (ask only if several active plans match). Read it fully —
    header, *Glossary*, *Decisions*, *Contracts*, *Tasks*, *Rollout*, *Acceptance*.
 2. `./scripts/ws doctor`; `./scripts/ws sync` if anything is missing or stale.
 3. **Drift check.** For each repo in the header, compare `Based on:` SHA with the branch tip:
@@ -30,8 +36,8 @@ imported) → one parallel review → one parallel fix round → finish.
    implement against a plan whose files moved under it.
 4. Unanswered *Open questions* that block a task → ask the user before dispatching that
    task, following **Asking the user** below. Non-blocking questions don't stop the work.
-5. Start the run record — the retro hook keys off it:
-   `printf 'started=%s\n' "$(date -u +%FT%TZ)" >> plans/NNN_slug/.ws-implement.run`
+5. Start the run record — the retro's metrics read it. Add a line under the plan header:
+   `Run: <date -u +%FT%TZ> → ` (resuming: leave the existing start).
 6. Which tasks: the user's selection, else every unticked task. Tasks typed `release` or
    anything on the release-only list (`WORKFLOW.md` § 7: deploys, shared-DB migrations, publishing, pushes) → **never by a
    subagent**; they become next steps for the user.
@@ -130,7 +136,7 @@ For every repo batch:
    verbatim, worktree path, branch, the other repos' contract in one line each.
 3. Dispatch all ready batches **in one message**:
    - **Claude Code** — `Agent`, one call per repo: `subagent_type: "general-purpose"`,
-     `model` = the family word of the `agents.yaml` ID (`claude-sonnet-5-5` → `sonnet`; the Agent tool only takes family words — `.claude/settings.json` `env` pins each family to its exact ID). After launch, check the result's `resolvedModel` equals the `agents.yaml` ID; if not, stop and tell the user, `effort` from `agents.yaml`, `description: "Implement <repo> NNN"`.
+     `model` = the family word of the `agents.yaml` ID (`claude-sonnet-5-5` → `sonnet`; the Agent tool only takes family words; it resolves to that family's current model, so an older ID in `agents.yaml` shows up as a mismatch below). After launch, check the result's `resolvedModel` equals the `agents.yaml` ID; if not, stop and tell the user, `effort` from `agents.yaml`, `description: "Implement <repo> NNN"`.
      Results arrive as notifications; don't do their work or poll meanwhile. **Keep each
      agent's id** — fixes go back to the same agent (§ 8).
    - **Codex** — native spawn tool with the `agents.yaml` model if present; otherwise:
@@ -272,11 +278,10 @@ Then tell the user, briefly:
 - tasks done / left, and the release tasks they must do (deploy order from *Rollout*);
 - review: what was found and fixed, minor findings not fixed, anything you couldn't verify.
 
-Then close the run record:
-`printf 'finished=%s\n' "$(date -u +%FT%TZ)" >> plans/NNN_slug/.ws-implement.run`.
-When you stop, the Stop hook (`.claude/hooks/ws-implement-retro.py`) writes
-`run-metrics.md` and asks for the retrospective — follow [`retro.md`](retro.md).
-A run stopped early (user cancels, blocked) gets `finished=` too, so its waste is reviewed.
+Then close the run record: finish the plan's `Run:` line with `date -u +%FT%TZ`.
+**Then run the retrospective, now, before you stop** — follow [`retro.md`](retro.md). It is
+the last step of this skill, not an optional extra. A run stopped early (user cancels,
+blocked) gets its end time and a retro too, so its waste is reviewed.
 
 Push and open PRs only in § 9, after the review and fix round. Never merge, deploy or remove
 worktrees unless asked. Cleanup after merge:

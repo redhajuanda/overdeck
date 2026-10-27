@@ -1,9 +1,14 @@
 ---
 name: ws-multi-implement
-description: Implement several plans from plans/NNN_slug/plan.md in one run in this multi-repo workspace (repos declared in `workspace.yaml`) — orders them by their dependencies and shared files, asks every blocking open question up front (one by one), then drives one shared pool of per-(plan, repo) implementer subagents through ws-implement's worktree / brief / contract-check / review / fix steps, stacking branches where plans touch the same files. The main session acts as the user: it schedules, unblocks and reviews, and asks the user only for product decisions. Use when the user asks to implement, build, ship or "kerjakan" more than one plan ("implement 042–045", "kerjakan semua plan", "do the remaining plans"), or to resume such a run.
+description: Implement several plans from plans/<member>/NNN_slug/plan.md in one run in this multi-repo workspace (repos declared in `workspace.yaml`) — orders them by their dependencies and shared files, asks every blocking open question up front (one by one), then drives one shared pool of per-(plan, repo) implementer subagents through ws-implement's worktree / brief / contract-check / review / fix steps, stacking branches where plans touch the same files. The main session acts as the user: it schedules, unblocks and reviews, and asks the user only for product decisions. Use when the user asks to implement, build, ship or "kerjakan" more than one plan ("implement 042–045", "kerjakan semua plan", "do the remaining plans"), or to resume such a run.
 ---
 
 # ws-multi-implement
+
+> **Project overlay.** If `.agents/overlays/ws-multi-implement.md` exists, read it before anything else: its
+> rules are this project's additions to this skill and win where they conflict. Pass the ones
+> that concern a subagent into its brief. Never edit this skill in a project — lessons go
+> through [`ws-learn`](../ws-learn/SKILL.md).
 
 This skill runs [`ws-implement`](../ws-implement/SKILL.md) for several plans at once, **from a
 single orchestrator**. Read ws-implement first. Every step it defines (worktrees, briefs, model
@@ -27,7 +32,7 @@ just routing.
    A plan that fails the drift check is re-verified (ws-plan § *Revising*) before it enters
    the schedule. Other plans don't wait for it.
 4. Ledger: create `plans/.ws-multi-implement.md` from § 7, or read it when resuming. Also
-   write `started=` to each plan's `.ws-implement.run` (ws-implement § 0.5).
+   write the `Run:` start line in each plan's header (ws-implement § 0.5).
 
 ## 1. Build the schedule
 
@@ -162,10 +167,8 @@ in parallel, at most one check command per repo worktree at a time. Then ws-impl
 commit → push → PR steps for each of its batches: an independent batch's PR targets
 the plan's source branch (`Based on:` header), a stacked batch's PR targets its predecessor's
 `feat/PPP-slug` (open the predecessor's PR first). Then set `Status:` →
-`implemented` and mark it `done` in the ledger. Write `finished=` to the plans'
-`.ws-implement.run` files **only at the very end, for all plans at once**. The Stop hook fires
-at every turn end, including turns spent waiting for agents, so an early `finished=` starts
-the retro in the middle of the run.
+`implemented` and mark it `done` in the ledger. Close the plans' `Run:` lines **only at
+the very end, for all plans at once**, so every plan's metrics cover the whole shared run.
 
 When every plan is done, give the user **one** summary:
 - A table: plan · repo · **PR link** · branch → PR base · worktree · checks → result ·
@@ -177,11 +180,11 @@ When every plan is done, give the user **one** summary:
 - Decisions the orchestrator made on the user's behalf (§ 3), so they can overrule any.
 - Review findings that were fixed, minor ones left, and anything unverified.
 
-**Retro, once for the whole run.** The Stop hook asks for a retro on the first finished plan.
-Do a single [`retro.md`](../ws-implement/retro.md) covering all plans, and add a *Multi* axis:
-idle pool slots, stack rebases and conflicts, questions asked vs. decided. Before stopping,
-append `retro=combined <first NNN>` to every other plan's `.ws-implement.run` so the hook
-doesn't fire again. Learnings go to `plans/ws-learnings.md`, tagged `multi`.
+**Retro, once for the whole run — the last step, before you stop.** Do a single
+[`retro.md`](../ws-implement/retro.md) in the first plan's folder covering all plans (metrics
+with that plan's `--plan`), and add a *Multi* axis: idle pool slots, stack rebases and
+conflicts, questions asked vs. decided. Every other plan's folder gets a one-line `retro.md`
+pointing to it. Learnings go to `plans/ws-learnings.md`, tagged `multi`.
 
 Push and open PRs only in § 6, after each plan's review and fix round. Never merge, deploy
 or remove worktrees unless the user asks.

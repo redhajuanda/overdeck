@@ -2,7 +2,7 @@
 
 Status: proposed · YYYY-MM-DD · repos: `<repo>` (<size>)…
 Based on: <repo> `<branch>@<sha>` … · depends on: <NNN or none> · blocks: <NNN or none>
-Intent: <intents/NNN_slug.md, or omit the line>
+Intent: <intents/<code>/NNN_slug.md, or omit the line>
 
 ## In plain words
 
