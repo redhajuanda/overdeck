@@ -94,4 +94,4 @@ What a merge triggers: <e.g. merging into `main` auto-deploys to dev>.
 
 ## 9. Lessons from past runs
 
-<ws-implement retros add one line per lesson here. Start empty.>
+<`ws-learn` and ws-implement retros add one line per lesson that fits no other §. Start empty.>

@@ -27,7 +27,7 @@ against a shared database, or touch any other repository.
 
 <the plan's *In plain words* section, verbatim or ≤ 6 sentences>
 
-Plan: `<workspace>/plans/<NNN_slug>/plan.md` — read *Glossary*,
+Plan: `<workspace>/plans/<code>/<NNN_slug>/plan.md` — read *Glossary*,
 *Decisions* and *Contracts* in it; read other sections only if a task points there.
 
 ## Where you work

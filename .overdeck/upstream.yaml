@@ -1,0 +1,26 @@
+# Which files the overdeck template owns, and which template commit this workspace is at.
+#
+# `./scripts/ws upgrade` pulls template changes into the paths under `owned:` and into the
+# `<!-- overdeck:begin NAME -->` … `<!-- overdeck:end NAME -->` blocks of the files under
+# `blocks:`. Everything else (WORKFLOW.md, PRODUCT.md, workspace.yaml, agents.yaml,
+# .agents/overlays/, plans/, intents/, context/, text outside the blocks) is the project's,
+# and upgrades never touch it.
+#
+# In a project, never edit an owned path or a block: put the change in an overlay
+# (.agents/overlays/<skill>.md) or tag it `upstream` in plans/ws-learnings.md (ws-learn skill).
+#
+# base: the template commit this workspace matches. Empty in the template itself;
+# set once per project by `./scripts/ws upgrade --init` (BOOTSTRAP.md § 4).
+
+source: git@github.com:redhajuanda/overdeck.git
+base:
+
+owned:
+  - .agents/skills
+  - .claude/skills
+  - scripts/ws
+  - CLAUDE.md
+  - .cursorrules
+
+blocks:
+  - AGENTS.md

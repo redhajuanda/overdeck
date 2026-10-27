@@ -5,6 +5,11 @@ description: Open a sticky worktree session for small, iterative changes in this
 
 # ws-explore
 
+> **Project overlay.** If `.agents/overlays/ws-explore.md` exists, read it before anything else: its
+> rules are this project's additions to this skill and win where they conflict. Pass the ones
+> that concern a subagent into its brief. Never edit this skill in a project — lessons go
+> through [`ws-learn`](../ws-learn/SKILL.md).
+
 A session of small tweaks the user will keep adding to — "change this, change this,
 change this" — then push once, when they say they are done. Same isolation as
 ws-direct (a worktree, never the clone in `repositories/`), **no** `plans/` file, **no**
@@ -248,3 +253,5 @@ After each tweak: what changed + still local (or pushed, if they asked). Name an
 spec you wrote or updated and say it was **not run**.
 After push: PR link + worktree kept.
 After merge: worktree gone.
+
+**Learn.** Last, run [`ws-learn`](../ws-learn/SKILL.md) § *Record*: a correction, a wrong command or doc, or a detour from this session (run it after the push, and again after the merge if more came up) gets one line in the right project file. Nothing → skip silently.

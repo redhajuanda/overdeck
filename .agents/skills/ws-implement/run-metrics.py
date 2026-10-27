@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """run-metrics.py <main-transcript.jsonl> <since-ISO> [until-ISO]
+   run-metrics.py --plan plans/<code>/NNN_slug
 
 Print a Markdown metrics table for one ws-implement run, read from Claude Code
 transcripts: the main session plus every subagent it spawned in the window.
 Tokens are summed from each assistant message's `usage`; time is first → last
-message. Used by the ws-implement retro Stop hook; safe to run by hand.
+message. `--plan` reads the window from the plan's `Run: <start> → <end>` line and picks
+the newest Claude Code transcript of this workspace that mentions the plan. Run by the
+ws-implement retro (retro.md); safe to run by hand.
 """
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -66,12 +70,32 @@ def row(name, model, effort, r):
             f"{msgs} | {tools} | {k(fresh)} | {k(tok['cache_read'])} | {k(tok['out'])} |"), tok
 
 
+def from_plan(plan_dir):
+    """(transcript, since, until) for a plan: its `Run:` line + this workspace's newest transcript."""
+    plan_dir = Path(plan_dir)
+    m = re.search(r"^Run:\s*(\S+)\s*→\s*(\S*)", (plan_dir / "plan.md").read_text(), re.M)
+    if not m:
+        sys.exit(f"{plan_dir}/plan.md has no `Run: <start> → <end>` line")
+    root = Path.cwd().resolve()
+    projects = Path.home() / ".claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(root))
+    candidates = sorted(projects.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
+    for path in candidates:
+        with open(path, encoding="utf-8", errors="ignore") as f:
+            if any(plan_dir.name in line for line in f):
+                return path, m.group(1), m.group(2) or None
+    sys.exit(f"no Claude Code transcript in {projects} mentions {plan_dir.name}")
+
+
 def main():
-    if len(sys.argv) < 3:
+    if len(sys.argv) == 3 and sys.argv[1] == "--plan":
+        path, since, until = from_plan(sys.argv[2])
+        main_path, since, until = path, ts(since), ts(until) if until else None
+    elif len(sys.argv) >= 3:
+        main_path = Path(sys.argv[1])
+        since = ts(sys.argv[2])
+        until = ts(sys.argv[3]) if len(sys.argv) > 3 else None
+    else:
         sys.exit(__doc__)
-    main_path = Path(sys.argv[1])
-    since = ts(sys.argv[2])
-    until = ts(sys.argv[3]) if len(sys.argv) > 3 else None
 
     lines = ["| Agent | Model | Effort | Minutes | Turns | Tool calls | Fresh input | Cache read | Output |",
              "|---|---|---|---|---|---|---|---|---|"]

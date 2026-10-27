@@ -1,9 +1,14 @@
 ---
 name: ws-plan
-description: Plan a feature, change request, non-trivial bug fix, refactor or any non-trivial work in this multi-repo workspace (repos declared in `workspace.yaml`) before implementing it — reads the affected code in every repo it touches first, then writes plans/NNN_slug/plan.md with file-level changes, ordered tasks and acceptance checks. Always confirms the source branch to read first. Use when the user asks to plan, scope, design, spec, estimate or "think through" a feature/CR, asks "how would we build X", or says "buat plan" / "rencanakan". Also use to revise or re-verify an existing plan in plans/, or to plan from an agreed intent in intents/ ("plan intent 007"). Not for small, already-clear edits (known files, no new cross-repo contract) — those use ws-direct, including when the user says "edit directly" / "langsung edit" (several commits is still ws-direct). Not for `/ws-explore` (a sticky session of small UI/wording/style tweaks).
+description: Plan a feature, change request, non-trivial bug fix, refactor or any non-trivial work in this multi-repo workspace (repos declared in `workspace.yaml`) before implementing it — reads the affected code in every repo it touches first, then writes plans/<member>/NNN_slug/plan.md with file-level changes, ordered tasks and acceptance checks. Always confirms the source branch to read first. Use when the user asks to plan, scope, design, spec, estimate or "think through" a feature/CR, asks "how would we build X", or says "buat plan" / "rencanakan". Also use to revise or re-verify an existing plan in plans/, or to plan from an agreed intent in intents/ ("plan intent 007"). Not for small, already-clear edits (known files, no new cross-repo contract) — those use ws-direct, including when the user says "edit directly" / "langsung edit" (several commits is still ws-direct). Not for `/ws-explore` (a sticky session of small UI/wording/style tweaks).
 ---
 
 # ws-plan
+
+> **Project overlay.** If `.agents/overlays/ws-plan.md` exists, read it before anything else: its
+> rules are this project's additions to this skill and win where they conflict. Pass the ones
+> that concern a subagent into its brief. Never edit this skill in a project — lessons go
+> through [`ws-learn`](../ws-learn/SKILL.md).
 
 A plan has two readers, and must work for both:
 
@@ -42,13 +47,15 @@ the plan is written.
 |---|---|
 | Small, already-clear, no new contract (or the user said "edit directly") | Hand off to **ws-direct** — no `plan.md` |
 | `/ws-explore`, or a session of small UI/wording/style tweaks they will push later | Hand off to **ws-explore** — no `plan.md` |
-| Touches 2+ repos, or product/schema decisions | `plans/NNN_slug/plan.md` here (next free number across **all branches**, see below; snake_case slug) |
+| Touches 2+ repos, or product/schema decisions | `plans/<code>/NNN_slug/plan.md` here (your next ID, see below; snake_case slug) |
 | One repo, and `WORKFLOW.md` § 8 names a spec flow for it that the change fits | Hand off: tell the user, use that flow instead |
-| One repo, no spec flow | `plans/NNN_slug/plan.md` here is fine |
+| One repo, no spec flow | `plans/<code>/NNN_slug/plan.md` here is fine |
 
-Numbers already taken anywhere: `git log --all --name-only --format= -- plans | grep -o 'plans/[0-9]*' | sort -u`.
-Also `ls plans plans/archived`: a peer session's uncommitted plan folder holds its number too.
-Re-run both checks **right before** creating the folder, not only at the start: planning takes minutes and a peer session can take the number meanwhile (190, 209).
+`<code>` and the ID come from the member running this session (`AGENTS.md` § Members):
+`./scripts/ws whoami` for the folder, `./scripts/ws next plan` for the ID (`rj-043`). The ID
+carries the member's prefix, so other members can't collide with it; run `ws next` **right
+before** creating the folder anyway, since a peer session of the same member may have taken
+one meanwhile. Split into several plans → take the IDs one by one as you create them.
 
 Run `./scripts/ws doctor` first; `./scripts/ws sync` if a repo is missing or stale — a plan
 written against a stale checkout is wrong on arrival. Note each repo's branch + short SHA in the
@@ -56,13 +63,13 @@ plan header as `<source branch>@<sha>` (`git -C repositories/<repo> rev-parse --
 
 ## 0b. Start from an intent, when there is one
 
-An intent (`intents/NNN_slug.md`, written with the ws-intent skill) is the agreed *what and
+An intent (`intents/<code>/NNN_slug.md`, written with the ws-intent skill; find it with `./scripts/ws find intent <id or slug>`) is the agreed *what and
 why*. If the user names one, or the request matches an active intent's slug, read it first.
 
 - `Status: draft` → it isn't agreed yet. Ask whether to finish it with ws-intent first or plan
   anyway (then treat it as input, not as fixed).
 - `agreed` / `planned` → its Outcome, Scope and Non-goals are **fixed**. Each plan's *Goal*
-  links to it (`Intent: intents/NNN_slug.md`) instead of rewriting it; *In plain words* stays.
+  links to it (`Intent: intents/<code>/NNN_slug.md`) instead of rewriting it; *In plain words* stays.
   Its *Likely plans* seeds the split in §1b and its *Evidence* is where recon starts.
 - **Code contradicts the intent** (a non-goal turns out to be required, the chosen direction is
   blocked, the cost is far beyond what the intent assumed) → stop and ask the user. Never
@@ -87,7 +94,7 @@ Load context that applies — and only that:
 - Each repo you'll touch: skim its `AGENTS.md` for rules that constrain the design (the
   subagent for that repo reads it in full).
 - Product, design and schema docs that apply to this kind of work (`WORKFLOW.md` § 3).
-- Related prior plans: `ls plans/` and skim any whose slug overlaps.
+- Related prior plans: `ls plans/*/` (every member's) and skim any whose slug overlaps.
 
 ## 1b. Split into small plans — one per feature or CR
 
@@ -188,7 +195,7 @@ Fill [`subagent-prompt.md`](subagent-prompt.md) once per repo — every placehol
 "see above": the subagent has **no** access to this conversation. Then launch them together:
 
 - **Claude Code** — `Agent` tool, one call per repo in the **same message**:
-  `subagent_type: "general-purpose"`, `model` = the family word of the `agents.yaml` ID (`claude-sonnet-5-5` → `sonnet`; the Agent tool only takes family words — `.claude/settings.json` `env` pins each family to its exact ID). After launch, check the result's `resolvedModel` equals the `agents.yaml` ID; if not, stop and tell the user, `effort` from `agents.yaml`,
+  `subagent_type: "general-purpose"`, `model` = the family word of the `agents.yaml` ID (`claude-sonnet-5-5` → `sonnet`; the Agent tool only takes family words; it resolves to that family's current model, so an older ID in `agents.yaml` shows up as a mismatch below). After launch, check the result's `resolvedModel` equals the `agents.yaml` ID; if not, stop and tell the user, `effort` from `agents.yaml`,
   `description: "Recon <repo> for <feature>"`. Results arrive as task notifications; wait for
   all of them. Don't redo their searches meanwhile.
 - **Codex** — use the native subagent/spawn tool with the `agents.yaml` model if this Codex
@@ -259,7 +266,7 @@ desktop (142: nav wrapped at 1440 px, unchecked in the mockup → review major +
 
 ## 4. Write the plan
 
-Copy [`template.md`](template.md) to `plans/NNN_slug/plan.md` and fill it. Fill it top-down
+Copy [`template.md`](template.md) to `plans/<code>/NNN_slug/plan.md` and fill it. Fill it top-down
 in this order of readers: *In plain words* → *How it works* (diagrams) → detail → tasks.
 
 ### 4a. Words — write so a non-engineer understands and an agent can't misread
@@ -373,7 +380,7 @@ Diagram rules:
 - Acceptance = observable behaviour, checkboxes, testable by someone who didn't build it.
 - Length: as long as the change needs and no longer — usually 80–200 lines. Reference docs
   (`see repositories/<repo>/AGENTS.md § Errors`) instead of restating them.
-- English, matching the tone of existing `plans/*/plan.md`.
+- In `docs_language` (`members.yaml`), matching the tone of existing `plans/*/*/plan.md`.
 
 ## 5. Self-check before showing it
 
@@ -409,6 +416,8 @@ Run through this; fix, don't just note:
 Then give the user: the plan path(s), a 3–5 line summary per plan (approach, repos touched, task count,
 biggest risk), and the open questions that need their answer. Don't paste the whole plan.
 Don't commit unless asked.
+
+**Learn.** Last, run [`ws-learn`](../ws-learn/SKILL.md) § *Record*: a correction, a wrong command or doc, or a detour from this plan (e.g. a recon claim that proved false, a question the docs should have answered) gets one line in the right project file. Nothing → skip silently.
 
 ## Revising an existing plan
 

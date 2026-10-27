@@ -7,6 +7,8 @@ This is the **__PROJECT__** project workspace. It is a thin coordination layer o
 independent app repositories. It holds planning and cross-repo decisions; it holds **no**
 code and **no** copied knowledge.
 
+<!-- overdeck:begin rules -->
+<!-- Owned by the overdeck template: `./scripts/ws upgrade` replaces this block. Put project rules outside it. -->
 ## Bootstrap — do this before anything else
 
 If a declared repo is missing, run `./scripts/ws sync` **before answering anything
@@ -17,6 +19,42 @@ pinned, so `ws sync` always leaves you on the real branch tip. Never commit a su
 files here.
 
 Repos are declared only in [`workspace.yaml`](workspace.yaml).
+
+## Workspace rules
+
+- Use the skills scoped to the repo you are in, not the other's.
+- **Plan from this root; implement from inside the repo.** A change spanning several repos wants
+  one session here. Single-repo work is cheaper started from that repo's directory.
+- **Dev servers / browsers:** follow `WORKFLOW.md` § 6 — one dev server per machine, stop it when done.
+- **Template vs. project files.** [`.overdeck/upstream.yaml`](.overdeck/upstream.yaml) lists
+  the files the overdeck template owns, and the `overdeck:begin/end` blocks in this file are
+  the template's too. In a project workspace never edit them — `./scripts/ws upgrade`
+  overwrites them. Project-specific changes go where § *Learning* says.
+
+## Members — `members.yaml`
+
+- **Who you are working with.** Run `./scripts/ws whoami -v` once per session, before the
+  first reply that needs it; it matches `git config user.email` against `members.yaml`. Talk to
+  that member in their `language` and `tone`. Everything you **write** (intents, plans, notes,
+  commits, PRs, subagent briefs) is in `docs_language`, whoever asked, so every member can read it.
+- **Not a member yet** (no match, or no git email): ask once who they are, recommending each
+  value from what you already know (`git config user.name` / `user.email`, the language they
+  write to you in, your memory of their preferences). On a yes, add them to `members.yaml`:
+  `code` = `firstname.lastname`, `prefix` = their initials (2–3 letters, unique); neither
+  ever changes once used.
+- **IDs.** Every intent, plan and backlog item a member creates is numbered with their own
+  prefix: plan `rj-042`, intent `rj-007`, backlog `rj-b003`. Each member counts on their own,
+  so IDs never collide, offline or on separate branches. In the `ws-*` skills, **`NNN` means
+  the full ID** (`rj-042`): folders `NNN_slug`, branches `feat/NNN-slug`, worktrees
+  `.worktrees/NNN_slug`. `./scripts/ws next plan|intent|backlog` gives your next ID;
+  `./scripts/ws find plan|intent|backlog <id, number or slug>` finds anyone's (your own first).
+  A bare number the user gives ("implement 042") means their own; if they have none and
+  someone else does, ask.
+- **Their folders.** Intents in `intents/<code>/` (with `backlog/` and `archived/`), plans in
+  `plans/<code>/` (with `archived/`). A plan or intent stays in its author's folder; any
+  member may revise, implement or archive it. Plans written from someone else's intent go in
+  the writer's folder.
+<!-- overdeck:end rules -->
 
 ## Repositories
 
@@ -32,10 +70,6 @@ read** — and only via a real file read. Before working in a repo, read its `AG
 
 - Frontend task → work inside `repositories/__PROJECT__-fe/`, follow that repo's `AGENTS.md`.
 - Backend task → work inside `repositories/__PROJECT__-be/`, follow that repo's `AGENTS.md`.
-- Use the skills scoped to the repo you are in, not the other's.
-- **Plan from this root; implement from inside the repo.** A change spanning several repos wants
-  one session here. Single-repo work is cheaper started from that repo's directory.
-- **Dev servers / browsers:** follow `WORKFLOW.md` § 6 — one dev server per machine, stop it when done.
 
 ## Design context
 
@@ -45,6 +79,8 @@ UI or product-facing copy work:
 - [`PRODUCT.md`](PRODUCT.md) — users, surfaces, principles, anti-references
 - [`DESIGN.md`](DESIGN.md) — product UI
 
+<!-- overdeck:begin workflow -->
+<!-- Owned by the overdeck template: `./scripts/ws upgrade` replaces this block. Put project rules outside it. -->
 ## Architecture notes — `context/architecture/`
 
 Cross-repo explanations of how a feature works end to end (FE + BE + infra), each stamped with
@@ -54,22 +90,22 @@ area, and re-check the code for details. Index: [`context/architecture/README.md
 ## Intents — `intents/`
 
 Optional step before planning, for big features or when it isn't yet clear what we want.
-An intent (`intents/007_rsvp_reminders.md`, own numbering) is a short, human-readable agreement
+An intent (`intents/<code>/rj-007_rsvp_reminders.md`, own numbering) is a short, human-readable agreement
 on the problem, outcome, scope, non-goals and chosen direction — no code, no tasks. Discuss and
 write it with the `ws-intent` skill (`.agents/skills/ws-intent/`): it acts as a critical senior
 product manager and probes the code read-only when an idea needs checking. One intent can
 become several plans; ws-plan treats an agreed intent's scope and non-goals as fixed.
-Ideas we plan to do later but whose requirements are not clear yet are parked in `intents/backlog/bNNN_<slug>.md`
+Ideas we plan to do later but whose requirements are not clear yet are parked in `intents/<code>/backlog/rj-bNNN_<slug>.md`
 (own `b001…` numbering by creation order) with the same skill, then picked up as an intent or cancelled.
 
 ## Planning — `plans/`
 
-One numbered directory per change (`plans/001_our_story/plan.md`). Cross-repo plans live here
+One numbered directory per change (`plans/<code>/rj-001_our_story/plan.md`, in its author's folder). Cross-repo plans live here
 because they belong to neither repo. Write plans with the `ws-plan` skill (`.agents/skills/ws-plan/`):
 it reads the affected code first (one read-only subagent per repo), then fills the plan template.
 Implement a plan with the `ws-implement` skill (`.agents/skills/ws-implement/`): one
 subagent per repo in a worktree, briefed with that repo's AGENTS.md + skill descriptions.
-Finished or abandoned plans move to `plans/archived/` with the `ws-archive` skill (`.agents/skills/ws-archive/`).
+Finished or abandoned plans move to `plans/<code>/archived/` with the `ws-archive` skill (`.agents/skills/ws-archive/`).
 Several plans at once → `ws-multi-implement` (`.agents/skills/ws-multi-implement/`): one
 orchestrator orders them, stacks branches on shared files and runs one shared agent pool.
 A small, already-clear change (known files, no new cross-repo contract) skips
@@ -83,3 +119,18 @@ merges. Bigger or unclear work still goes through intent and/or plan.
 Subagent models are set in [`agents.yaml`](agents.yaml) — change models there, not in skills.
 Project-specific workflow facts the skills read (stack commands, worktree setup, dev server,
 release-only actions) live in [`WORKFLOW.md`](WORKFLOW.md).
+
+## Learning — `ws-learn`
+
+The workspace learns by writing lessons into files the next session reads. It never writes
+them into template-owned files, so upgrading the template stays a clean overwrite.
+
+- When the user corrects you, or a command, path, doc or assumption turns out wrong, record
+  it with the `ws-learn` skill (`.agents/skills/ws-learn/`) before you finish the task. Every
+  `ws-*` skill ends with this step; "remember this" / "catat ini" calls it directly.
+- Where a lesson goes: project facts → `WORKFLOW.md`; how a `ws-*` skill should behave in this
+  project → `.agents/overlays/<skill>.md` (each skill reads its overlay first); how a feature
+  works → `context/architecture/`; product → `PRODUCT.md` / `DESIGN.md`; an improvement every
+  project would want → a `plans/ws-learnings.md` line tagged `upstream`, sent to the template
+  as a PR and pulled back with `./scripts/ws upgrade`.
+<!-- overdeck:end workflow -->

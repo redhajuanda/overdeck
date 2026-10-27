@@ -1,0 +1,25 @@
+# Everyone who works in this workspace. Project-owned: `ws upgrade` never touches it.
+#
+# code      folder name for the member's intents and plans: intents/<code>/, plans/<code>/
+#           (lowercase, dots allowed, e.g. redha.juanda). Never change it once used.
+# prefix    2–3 lowercase letters, usually initials (rj), unique across members. Starts every
+#           ID the member creates: plans rj-042, intents rj-007, backlog rj-b003. Each member
+#           counts on their own, so IDs never collide — offline or on separate branches.
+#           Never change it once used.
+# emails    git user.email address(es) that identify the member, comma-separated.
+#           `./scripts/ws whoami` matches `git config user.email` against them.
+# language  the language the agent talks to them in.
+# tone      how the agent talks to them (e.g. "casual, direct", "formal, detailed").
+#
+# docs_language: the language every file here is written in (intents, plans, notes),
+# whoever writes it, so every member can read every file.
+
+docs_language: English
+
+members:
+  - code: __MEMBER__
+    prefix: __MEMBER_PREFIX__
+    name: __MEMBER_NAME__
+    emails: __MEMBER_EMAIL__
+    language: English
+    tone: concise, direct

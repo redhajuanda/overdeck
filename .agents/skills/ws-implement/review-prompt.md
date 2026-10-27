@@ -17,7 +17,7 @@ You review **every repo listed below**, each against its own rules, plus the cro
 
 <the plan's *In plain words* section, ≤ 6 sentences>
 
-Plan: `<workspace>/plans/<NNN_slug>/plan.md` — *Glossary*,
+Plan: `<workspace>/plans/<code>/<NNN_slug>/plan.md` — *Glossary*,
 *Contracts*, *Rollout* and *Acceptance* are the spec you review against.
 
 ## What to review

@@ -5,6 +5,11 @@ description: Implement a small, already-clear change in this multi-repo workspac
 
 # ws-direct
 
+> **Project overlay.** If `.agents/overlays/ws-direct.md` exists, read it before anything else: its
+> rules are this project's additions to this skill and win where they conflict. Pass the ones
+> that concern a subagent into its brief. Never edit this skill in a project — lessons go
+> through [`ws-learn`](../ws-learn/SKILL.md).
+
 A plan exists so an implementer who has not seen the code can still be exact. When the
 change is **small and already clear**, that document is overhead: the session that heard
 the request can just do it. This skill is that path — same isolation as ws-implement
@@ -42,7 +47,7 @@ ask once, recommended option first.
 If mid-edit the change grows (new contract, many files, a product choice) → **stop**, say
 so, offer ws-plan. Don't keep going and don't create a plan.md on the side.
 
-Do **not** write `plans/NNN_slug/` or an intent. Direct work is recorded by the PR.
+Do **not** write a `plans/` folder or an intent. Direct work is recorded by the PR.
 
 ## 1. Which repos — only what the task needs
 
@@ -186,3 +191,5 @@ before and never skipped:
 the deploy order of `WORKFLOW.md` § 7 (e.g. BE before FE). Failures or a still-draft
 PR → don't force-merge; tell the user. Don't merge unasked, and don't deploy anything
 beyond what merging into the source branch already does.
+
+**Learn.** Last, run [`ws-learn`](../ws-learn/SKILL.md) § *Record*: a correction, a wrong command or doc, or a detour from this change gets one line in the right project file. Nothing → skip silently.
