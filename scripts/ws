@@ -3,7 +3,7 @@
 #
 #   ws sync     clone missing repos, fetch present ones, fast-forward knowledge repos
 #   ws doctor   report what is missing or stale (incl. worktrees), exit non-zero if a repo is missing
-#   ws status   one line per repo: branch, dirty count, ahead/behind
+#   ws status   one line per repo (code and knowledge): branch, dirty count
 #   ws foreach  run a command in every code repo, e.g. ws foreach git fetch
 #   ws upgrade  pull overdeck template changes into the files it owns (--check: dry run,
 #               --init: record which template commit this workspace came from)
@@ -11,6 +11,7 @@
 #   ws template prints "template" in the overdeck template itself, "project" elsewhere
 #   ws find     plan|intent|backlog|decision <id, number or slug> — its path(s), active or archived
 #   ws next     plan|intent|backlog|decision — your next free ID, e.g. rj-043 (no network needed)
+#   ws relations [repo]  who calls / depends on / publishes to / follows whom (workspace.yaml)
 #
 # Reads workspace.yaml, members.yaml and .overdeck/upstream.yaml. No dependencies beyond bash + git + awk.
 set -euo pipefail
@@ -36,7 +37,8 @@ _lock() {
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MANIFEST="$ROOT/workspace.yaml"
-REPO_DIR="repositories"   # where the declared repos are cloned
+REPO_DIR="repositories"           # where `repos:` (ours) are cloned
+KNOW_DIR="repositories/knowledges" # where `knowledge:` repos (read-only) are cloned
 cd "$ROOT"
 
 [ -f "$MANIFEST" ] || { echo "ws: no workspace.yaml at $ROOT" >&2; exit 1; }
@@ -44,18 +46,54 @@ cd "$ROOT"
 if [ -t 1 ]; then B=$'\033[1m'; R=$'\033[31m'; G=$'\033[32m'; Y=$'\033[33m'; D=$'\033[2m'; N=$'\033[0m'
 else B=; R=; G=; Y=; D=; N=; fi
 
-# Emit "name<TAB>url<TAB>branch<TAB>kind" per repo.
+# workspace.yaml has two lists. `repos:` are ours (kind code, cloned to repositories/<name>);
+# `knowledge:` are someone else's, read-only here (kind knowledge, cloned to
+# repositories/knowledges/<name>). A legacy `kind: knowledge` under `repos:` still counts as
+# knowledge; `ws doctor` asks to move it.
+# Emit "name<TAB>url<TAB>branch<TAB>kind<TAB>dir<TAB>legacy" per repo, code repos first.
 repos() {
-  awk '
+  awk -v rd="$REPO_DIR" -v kd="$KNOW_DIR" '
+    function flush() {
+      if (name == "") return
+      if (kind == "") kind = (sect == "knowledge") ? "knowledge" : "code"
+      legacy = (sect == "repos" && kind == "knowledge") ? "legacy" : ""
+      print name "\t" url "\t" branch "\t" kind "\t" ((kind == "knowledge") ? kd : rd) "/" name "\t" legacy
+      name = ""
+    }
     /^[[:space:]]*#/ { next }
+    /^[A-Za-z_-]+:/  { flush(); sect = $0; sub(/:.*/, "", sect); next }
+    sect != "repos" && sect != "knowledge" { next }
     /^[[:space:]]*-[[:space:]]*name:[[:space:]]*/ {
-      if (name != "") print name "\t" url "\t" branch "\t" kind
-      name = $0; sub(/^[^:]*:[[:space:]]*/, "", name); url = branch = kind = ""; next
+      flush(); name = $0; sub(/^[^:]*:[[:space:]]*/, "", name); url = branch = kind = ""; next
     }
     name != "" && /^[[:space:]]+url:[[:space:]]*/    { url = $0;    sub(/^[^:]*:[[:space:]]*/, "", url);    next }
     name != "" && /^[[:space:]]+branch:[[:space:]]*/ { branch = $0; sub(/^[^:]*:[[:space:]]*/, "", branch); next }
     name != "" && /^[[:space:]]+kind:[[:space:]]*/   { kind = $0;   sub(/^[^:]*:[[:space:]]*/, "", kind);   next }
-    END { if (name != "") print name "\t" url "\t" branch "\t" kind }
+    END { flush() }
+  ' "$MANIFEST" | sort -t$'\t' -k4,4 -s
+}
+
+# Relations between repos, declared under a `repos:` entry as `- <verb>: <target> — <why>`.
+# Emit "from<US>verb<US>target<US>why<US>section" per edge (section: where `from` sits). US is
+# \x1f, not a tab: read collapses consecutive tabs, which would shift fields after an empty why.
+RELATION_VERBS="calls depends-on publishes consumes follows"
+relations() {
+  awk '
+    /^[[:space:]]*#/ { next }
+    /^[A-Za-z_-]+:/  { sect = $0; sub(/:.*/, "", sect); name = ""; inrel = 0; next }
+    /^[[:space:]]*-[[:space:]]*name:[[:space:]]*/ {
+      name = $0; sub(/^[^:]*:[[:space:]]*/, "", name); inrel = 0; next
+    }
+    name != "" && /^[[:space:]]+relations:[[:space:]]*$/ { inrel = 1; next }
+    name != "" && inrel && /^[[:space:]]+-[[:space:]]*[a-z-]+:/ {
+      line = $0; sub(/^[[:space:]]+-[[:space:]]*/, "", line)
+      verb = line; sub(/:.*/, "", verb)
+      rest = line; sub(/^[^:]*:[[:space:]]*/, "", rest)
+      target = rest; sub(/[[:space:]].*/, "", target)
+      why = rest; sub(/^[^[:space:]]*[[:space:]]*/, "", why); sub(/^(—|--|-)[[:space:]]*/, "", why)
+      print name "\037" verb "\037" target "\037" why "\037" sect; next
+    }
+    name != "" && /^[[:space:]]+[a-z_-]+:/ { inrel = 0 }
   ' "$MANIFEST"
 }
 
@@ -65,30 +103,30 @@ branch() { git -C "$1" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?'; }
 cmd_sync() {
   _lock
   local rc=0
-  while IFS=$'\t' read -r name url br kind; do
-    if [ ! -d "$REPO_DIR/$name/.git" ]; then
+  while IFS=$'\t' read -r name url br kind dir legacy; do
+    if [ ! -d "$dir/.git" ]; then
       echo "${B}clone${N} $name ${D}($br)${N}"
-      mkdir -p "$REPO_DIR"
-      git clone --quiet --branch "$br" "$url" "$REPO_DIR/$name" \
+      mkdir -p "$(dirname "$dir")"
+      git clone --quiet --branch "$br" "$url" "$dir" \
         || { echo "  ${R}failed${N} — check SSH access to $url" >&2; rc=1; continue; }
-      [ "$kind" = "knowledge" ] && git -C "$REPO_DIR/$name" remote set-url --push origin READ-ONLY-IN-THIS-WORKSPACE
+      [ "$kind" = "knowledge" ] && git -C "$dir" remote set-url --push origin READ-ONLY-IN-THIS-WORKSPACE
       continue
     fi
-    git -C "$REPO_DIR/$name" fetch --quiet --all --prune || { echo "  ${Y}fetch failed${N} $name" >&2; rc=1; continue; }
+    git -C "$dir" fetch --quiet --all --prune || { echo "  ${Y}fetch failed${N} $name" >&2; rc=1; continue; }
     if [ "$kind" = "knowledge" ]; then
       # Knowledge repos must never go stale: fast-forward to the tracked branch.
       # Skipped when dirty or off-branch so local work is never clobbered.
       # Read-only mirror: keep the push URL disabled even on repos cloned earlier.
-      git -C "$REPO_DIR/$name" remote set-url --push origin READ-ONLY-IN-THIS-WORKSPACE
-      local cur; cur="$(branch "$REPO_DIR/$name")"
-      if [ "$(dirty "$REPO_DIR/$name")" != "0" ]; then
+      git -C "$dir" remote set-url --push origin READ-ONLY-IN-THIS-WORKSPACE
+      local cur; cur="$(branch "$dir")"
+      if [ "$(dirty "$dir")" != "0" ]; then
         echo "${R}DIRTY${N} $name — read-only here, yet it has local changes."
         echo "      Nothing was discarded. Move the work to a separate $name checkout,"
-        echo "      open an MR there, then: git -C $name checkout . && ./scripts/ws sync"
+        echo "      open an MR there, then: git -C $dir checkout . && ./scripts/ws sync"
         rc=1
       elif [ "$cur" != "$br" ]; then
         echo "${Y}warn${N}  $name — on '$cur', expected '$br'; not fast-forwarded"
-      elif git -C "$REPO_DIR/$name" merge --ff-only "origin/$br" --quiet 2>/dev/null; then
+      elif git -C "$dir" merge --ff-only "origin/$br" --quiet 2>/dev/null; then
         echo "${G}ok${N}    $name ${D}(up to date with origin/$br)${N}"
       else
         echo "${R}DIVERGED${N} $name — read-only here, yet it has commits not on origin/$br."
@@ -97,7 +135,7 @@ cmd_sync() {
       fi
     else
       # Code repos: fetch only. Your branch and working tree are never touched.
-      echo "${G}ok${N}    $name ${D}(fetched; on '$(branch "$REPO_DIR/$name")', left alone)${N}"
+      echo "${G}ok${N}    $name ${D}(fetched; on '$(branch "$dir")', left alone)${N}"
     fi
   done < <(repos)
   return $rc
@@ -105,25 +143,58 @@ cmd_sync() {
 
 cmd_doctor() {
   local missing=0
-  while IFS=$'\t' read -r name url br kind; do
-    if [ ! -d "$REPO_DIR/$name/.git" ]; then
+  while IFS=$'\t' read -r name url br kind dir legacy; do
+    if [ ! -d "$dir/.git" ]; then
       echo "${R}MISSING${N} $name — run ${B}./scripts/ws sync${N}"; missing=1; continue
     fi
     local extra=""
     if [ "$kind" = "knowledge" ]; then
-      local behind; behind="$(git -C "$REPO_DIR/$name" rev-list --count "HEAD..origin/$br" 2>/dev/null || echo 0)"
-      local days;   days="$(( ( $(date +%s) - $(git -C "$REPO_DIR/$name" log -1 --format=%ct 2>/dev/null || date +%s) ) / 86400 ))"
+      local behind; behind="$(git -C "$dir" rev-list --count "HEAD..origin/$br" 2>/dev/null || echo 0)"
+      local days;   days="$(( ( $(date +%s) - $(git -C "$dir" log -1 --format=%ct 2>/dev/null || date +%s) ) / 86400 ))"
       [ "$behind" != "0" ] && extra=" ${Y}$behind commits behind origin/$br — run ws sync${N}"
       extra="$extra ${D}(last commit ${days}d ago)${N}"
     fi
     echo "${G}ok${N}      $name ${D}[$kind]${N}$extra"
   done < <(repos)
+  manifest_check
   members_check
   [ -f "$ROOT/agents.local.yaml" ] && echo "${D}note${N}    agents.local.yaml overrides agents.yaml for you (personal, gitignored)"
   worktrees
   template_drift
   learnings
   [ "$missing" = "0" ] || return 1
+}
+
+# Doctor: is workspace.yaml consistent? Names unique and not `knowledges` (that is the
+# knowledge clone folder), no legacy `kind: knowledge` under `repos:`, and every relation
+# starts from a `repos:` entry, uses a known verb and points at a declared repo.
+manifest_check() {
+  local names=" " name url br kind dir legacy from verb target why sect
+  while IFS=$'\t' read -r name url br kind dir legacy; do
+    [[ "$names" == *" $name "* ]] && echo "${R}manifest${N} $name declared twice in workspace.yaml"
+    names="$names$name "
+    [ "$name" = knowledges ] && echo "${R}manifest${N} a repo cannot be named 'knowledges' — that is $KNOW_DIR/"
+    if [ "$legacy" = legacy ]; then
+      echo "${Y}manifest${N} $name has 'kind: knowledge' under repos: — move it to the knowledge: list"
+      [ -d "$REPO_DIR/$name/.git" ] && echo "         its old clone $REPO_DIR/$name can be deleted once $dir is synced"
+    fi
+  done < <(repos)
+  while IFS=$'\x1f' read -r from verb target why sect; do
+    [ "$sect" = repos ] || { echo "${Y}manifest${N} $from declares relations, but only repos: entries may (knowledge repos are not ours to describe)"; continue; }
+    [[ " $RELATION_VERBS " == *" $verb "* ]] || echo "${Y}manifest${N} $from: unknown relation '$verb' — use one of: $RELATION_VERBS"
+    [[ "$names" == *" $target "* ]] || echo "${Y}manifest${N} $from $verb $target — '$target' is not declared in workspace.yaml"
+    [ -n "$why" ] || echo "${Y}manifest${N} $from $verb $target — add the why: \`- $verb: $target — <why>\`"
+  done < <(relations)
+  return 0
+}
+
+cmd_relations() {
+  local only="${1:-}" from verb target why sect n=0
+  while IFS=$'\x1f' read -r from verb target why sect; do
+    [ -z "$only" ] || [ "$from" = "$only" ] || [ "$target" = "$only" ] || continue
+    printf "%-16s %-11s %-16s ${D}%s${N}\n" "$from" "$verb" "$target" "$why"; n=$((n + 1))
+  done < <(relations)
+  [ "$n" -gt 0 ] || echo "${D}no relations${only:+ for $only} in workspace.yaml${N}"
 }
 
 # Doctor: is the learning loop healthy? (ws-learn skill). Informational only — flags a
@@ -151,6 +222,7 @@ learnings() {
     p="${p%%:*}"; p="${p%/}"
     [ -e "$ROOT/$p" ] && continue
     compgen -G "$ROOT/$REPO_DIR/*/$p" >/dev/null && continue
+    compgen -G "$ROOT/$KNOW_DIR/*/$p" >/dev/null && continue
     _ln_head; echo "  ${D}maybe stale${N} ${f}: \`$p\` exists nowhere"
   done < <(
     { for f in "$ROOT"/.agents/overlays/*.md; do
@@ -184,19 +256,20 @@ cmd_template() {
 worktrees() {
   local wt="$ROOT/.worktrees" header=0 known=" "
   _wt_head() { [ "$header" = 1 ] || { echo "${B}worktrees${N}"; header=1; }; }
-  while IFS=$'\t' read -r name url br kind; do
-    [ -d "$REPO_DIR/$name/.git" ] || continue
-    git -C "$REPO_DIR/$name" worktree prune 2>/dev/null || true
+  while IFS=$'\t' read -r name url br kind dir legacy; do
+    [ -d "$dir/.git" ] || continue
+    git -C "$dir" worktree prune 2>/dev/null || true
     local path="" wbr=""
     while IFS= read -r line; do
       case "$line" in
         "worktree "*) path="${line#worktree }" ;;
         "branch "*)   wbr="${line#branch refs/heads/}" ;;
         "")
-          if [ -n "$path" ] && [ "$path" != "$ROOT/$REPO_DIR/$name" ]; then
+          if [ -n "$path" ] && [ "$path" != "$ROOT/$dir" ]; then
             _wt_head
             known="$known$path "
             local notes="" plan ahead d
+            [ "$kind" = knowledge ] && notes="$notes ${R}knowledge repo — read-only here, remove this worktree${N}"
             if [[ "$path" == "$wt/"* ]]; then
               plan="${path#"$wt/"}"; plan="${plan%%/*}"
               { compgen -G "plans/*/archived/${plan}" >/dev/null || compgen -G "plans/archived/${plan}" >/dev/null \
@@ -211,7 +284,7 @@ worktrees() {
           fi
           path=""; wbr="" ;;
       esac
-    done < <(git -C "$REPO_DIR/$name" worktree list --porcelain; echo)
+    done < <(git -C "$dir" worktree list --porcelain; echo)
   done < <(repos)
   # Folders under .worktrees/ that no repo knows about are leftovers.
   local dir
@@ -551,17 +624,17 @@ members_check() {
 }
 
 cmd_status() {
-  while IFS=$'\t' read -r name url br kind; do
-    [ -d "$REPO_DIR/$name/.git" ] || { printf "%-16s ${R}missing${N}\n" "$name"; continue; }
-    printf "%-16s %-14s %s dirty\n" "$name" "$(branch "$REPO_DIR/$name")" "$(dirty "$REPO_DIR/$name")"
+  while IFS=$'\t' read -r name url br kind dir legacy; do
+    [ -d "$dir/.git" ] || { printf "%-16s ${R}missing${N}\n" "$name"; continue; }
+    printf "%-16s %-14s %s dirty\n" "$name" "$(branch "$dir")" "$(dirty "$dir")"
   done < <(repos)
 }
 
 cmd_foreach() {
-  while IFS=$'\t' read -r name url br kind; do
+  while IFS=$'\t' read -r name url br kind dir legacy; do
     [ "$kind" = "code" ] || continue
-    [ -d "$REPO_DIR/$name/.git" ] || continue
-    echo "${B}== $name${N}"; ( cd "$REPO_DIR/$name" && "$@" )
+    [ -d "$dir/.git" ] || continue
+    echo "${B}== $name${N}"; ( cd "$dir" && "$@" )
   done < <(repos)
 }
 
@@ -575,5 +648,6 @@ case "${1:-doctor}" in
   template) shift; cmd_template "$@" ;;
   find)    shift; cmd_find "$@" ;;
   next)    shift; cmd_next "$@" ;;
-  *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+  relations) shift; cmd_relations "$@" ;;
+  *) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
 esac

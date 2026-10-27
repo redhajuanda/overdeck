@@ -29,6 +29,11 @@ against a shared database, or touch any other repository.
 
 Plan: `<workspace>/plans/<code>/<NNN_slug>/plan.md` — read *Glossary*,
 *Decisions* and *Contracts* in it; read other sections only if a task points there.
+
+Knowledge repos the plan read (its `Knowledge:` line) are at
+`<workspace>/repositories/knowledges/<name>` — read them for the rules and contracts they set;
+never edit them. If your task seems to need a change there, stop and report it.
+
 Project-wide rules: `<workspace>/context/architecture/contracts.md` for anything that
 crosses a repo boundary (error shape, IDs, time, casing); `<workspace>/context/glossary.md`
 for the domain words. <omit a file that is still a stub>

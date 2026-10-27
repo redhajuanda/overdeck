@@ -20,13 +20,15 @@ touching what the project learned itself. → [Self-learning](#self-learning-and
 overdeck/
 ├── AGENTS.md            rules every agent reads first
 ├── WORKFLOW.md          project facts the skills read (commands, dev server, release)
-├── workspace.yaml       the repos — the only place they're declared
+├── workspace.yaml       the repos — ours (repos:) and read-only references (knowledge:),
+│                        and how they relate (calls, depends-on, …)
 ├── agents.yaml          subagent models per role (agents.local.yaml: your own, gitignored)
 ├── members.yaml         who works here: code, ID prefix, git emails, language, tone
 ├── PRODUCT.md, DESIGN.md what we want: users, principles, UI
-├── scripts/ws           sync | doctor | status | foreach | upgrade | template
+├── scripts/ws           sync | doctor | status | foreach | upgrade | relations | template
 ├── .overdeck/           upstream.yaml: which files the template owns + the template commit
-├── repositories/        app repos, cloned by `ws sync` (gitignored, never submodules)
+├── repositories/        app repos, cloned by `ws sync` (gitignored, never submodules);
+│                        knowledges/<name> holds the read-only knowledge repos
 ├── intents/<member>/  plans/<member>/
 ├── context/            how it works today: glossary, actors, domain, architecture,
 │                        integrations, decisions (ADRs)

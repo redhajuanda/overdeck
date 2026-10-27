@@ -6,8 +6,22 @@
 #
 # Adding a repo? Add a block here — that is the only place it needs to exist.
 #
-# kind: code      — you work in it; ws sync only fetches, never moves your branch
-# kind: knowledge — read-only reference; ws sync fast-forwards it and disables push
+# repos:     ours. We plan, implement and open PRs here. Cloned to repositories/<name>;
+#            ws sync only fetches, never moves your branch.
+# knowledge: someone else's, read-only here — read and cite it while discussing intents and
+#            planning, never edit it (treat it like a third-party repo). Cloned to
+#            repositories/knowledges/<name>; ws sync fast-forwards it and disables push.
+#            Contributing means a PR to its owner from a separate clone, never from here.
+#
+# relations (repos: entries only) — one line per edge, from this repo:
+#   - <verb>: <target repo> — <why, one line>
+#   verbs: calls       runtime request (HTTP, gRPC) to the target
+#          depends-on  build-time dependency (library, generated client, shared schema)
+#          publishes   sends events/messages the target consumes
+#          consumes    reads events/messages the target publishes
+#          follows     must conform to the target's spec, guidelines or design system
+#   Details (endpoints, payloads) belong in context/architecture/, not here.
+#   `./scripts/ws relations [repo]` lists them; `./scripts/ws doctor` checks them.
 
 workspace: __PROJECT__
 
@@ -15,13 +29,22 @@ repos:
   - name: __PROJECT__-fe
     url: git@github.com:__OWNER__/__PROJECT__-fe.git
     branch: main
-    kind: code
     role: Frontend — <stack> (<surfaces>)
     agents: repositories/__PROJECT__-fe/AGENTS.md
+    relations:
+      - calls: __PROJECT__-be — <API style, what for>
 
   - name: __PROJECT__-be
     url: git@github.com:__OWNER__/__PROJECT__-be.git
     branch: main
-    kind: code
     role: Backend — <stack> (<APIs, auth, storage, …>)
     agents: repositories/__PROJECT__-be/AGENTS.md
+
+knowledge: []
+# knowledge:
+#   - name: <their-repo>
+#     url: git@github.com:<owner>/<their-repo>.git
+#     branch: main
+#     role: <what it holds — shared contracts, API guidelines, design system, …>
+#     owner: <team or person> — <how to contribute: PR to their repo, issue, channel>
+#     read-when: <topics that should make a plan or intent read it>

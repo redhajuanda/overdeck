@@ -58,6 +58,11 @@ a handler message is BE only; a contract change is not direct work.
 Unsure whether a second repo is involved → that uncertainty is a reason to use ws-plan,
 not a reason to create a spare worktree.
 
+Only `repos:` entries in `workspace.yaml` qualify. A fix that belongs in a knowledge repo
+(`repositories/knowledges/`) is not ours to make: tell the user what its `owner:` would need
+to change and offer the issue/PR text; make it only if they ask, from a separate clone outside
+this workspace (`AGENTS.md` § Bootstrap).
+
 `./scripts/ws doctor`; `./scripts/ws sync` if a **needed** repo is missing or stale.
 
 ## 2. Confirm the source branch — always, before the worktree
