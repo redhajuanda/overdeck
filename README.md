@@ -10,7 +10,7 @@ overdeck/
 ├── AGENTS.md            rules every agent reads first
 ├── WORKFLOW.md          project facts the skills read (commands, dev server, release)
 ├── workspace.yaml       the repos — the only place they're declared
-├── agents.yaml          subagent models per role
+├── agents.yaml          subagent models per role (agents.local.yaml: your own, gitignored)
 ├── members.yaml         who works here: code, ID prefix, git emails, language, tone
 ├── PRODUCT.md, DESIGN.md
 ├── scripts/ws           sync | doctor | status | foreach | upgrade

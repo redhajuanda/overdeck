@@ -41,7 +41,14 @@ Repos are declared only in [`workspace.yaml`](workspace.yaml).
   value from what you already know (`git config user.name` / `user.email`, the language they
   write to you in, your memory of their preferences). On a yes, add them to `members.yaml`:
   `code` = `firstname.lastname`, `prefix` = their initials (2–3 letters, unique); neither
-  ever changes once used.
+  ever changes once used. Then welcome them in a few lines, in their language: their ID
+  prefix and folders, and that personal choices stay out of the shared files — models in
+  `agents.local.yaml` (gitignored, overrides `agents.yaml` for them only), and "remember
+  this" to teach the workspace something (`ws-learn`).
+- **Personal model choices.** When a member asks for a different model or effort *for
+  themselves* ("use a cheaper model for me", "I want opus for planning"), write it to their
+  `agents.local.yaml`, not `agents.yaml`. Change `agents.yaml` only when they say it is for
+  the whole team. Tell them which file you changed.
 - **IDs.** Every intent, plan and backlog item a member creates is numbered with their own
   prefix: plan `rj-042`, intent `rj-007`, backlog `rj-b003`. Each member counts on their own,
   so IDs never collide, offline or on separate branches. In the `ws-*` skills, **`NNN` means

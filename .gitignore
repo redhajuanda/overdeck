@@ -10,8 +10,9 @@
 # `./scripts/ws doctor` lists them; ws-archive removes a plan's folder.
 /.worktrees/
 
-# Personal agent settings
+# Personal agent settings — agents.local.yaml overrides agents.yaml for you only
 /.claude/settings.local.json
+/agents.local.yaml
 
 # ws sync lock
 /.ws.lock

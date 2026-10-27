@@ -45,5 +45,6 @@ from (by matching the workspace's first commit) and writes it to `.overdeck/upst
 `base:`, so later `ws upgrade` runs know what changed. Project text in `AGENTS.md` goes **outside** the `overdeck:begin/end` blocks.
 
 Delete `BOOTSTRAP.md`, remove the "New workspace?" note at the top of `AGENTS.md`, and commit
-(`chore: bootstrap <project> workspace from overdeck`). Report what you filled in and every TODO.
+(`chore: bootstrap <project> workspace from overdeck`). Report what you filled in and every TODO, then the few things a member should know: their
+ID prefix, `agents.local.yaml` for personal model choices, and "remember this" (`ws-learn`).
 From here on, talk to them in their `language` and `tone`.

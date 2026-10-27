@@ -110,8 +110,8 @@ plus anything that waits and why). At most `roles.repo-implement.max_parallel` a
 
 ## 3. Pick the model — from `agents.yaml`
 
-Read `agents.yaml` at the workspace root. Take `subagents.claude` (Claude Code) or
-`subagents.codex` (Codex), then apply overrides under the role: `roles.repo-implement` for
+Read `agents.yaml` at the workspace root, then `agents.local.yaml` if it exists (personal overrides, key by key — see the header of `agents.yaml`). Take `subagents.claude`
+(Claude Code), `subagents.codex` (Codex) or `subagents.cursor` (Cursor), then apply overrides under the role: `roles.repo-implement` for
 implementers, `roles.change-review` for reviewers (§ 7). Never hard-code a model here or in a
 prompt. Missing file → use the session default and say so.
 
@@ -148,6 +148,8 @@ For every repo batch:
      Tests that need the network or caches outside the worktree (module / package stores) also
      need `-c sandbox_workspace_write.network_access=true` and those dirs as writable roots
      (`WORKFLOW.md` § 5).
+   - **Cursor** — its subagent tool with `model` from the `cursor` block (`inherit` = this
+     chat's model). Cursor can ignore a pinned model, so report which model you asked for.
 
 ## 5. Contract check — as each report arrives (minutes, not a review)
 

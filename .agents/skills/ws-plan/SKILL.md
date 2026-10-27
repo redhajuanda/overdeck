@@ -171,8 +171,8 @@ in one line to the user. When you read yourself, the rules in "Rules while readi
 
 ### 2a. Pick the model — from `agents.yaml`
 
-Only for repos where 2·0 chose a subagent. Read `agents.yaml` at the workspace root. Use the block for the tool you are running in
-(`subagents.claude` in Claude Code, `subagents.codex` in Codex), then apply any override under
+Only for repos where 2·0 chose a subagent. Read `agents.yaml` at the workspace root, then `agents.local.yaml` if it exists (personal overrides, key by key — see the header of `agents.yaml`). Use the block for the tool you are running in
+(`subagents.claude` in Claude Code, `subagents.codex` in Codex, `subagents.cursor` in Cursor), then apply any override under
 `roles.repo-recon`. Never hard-code a model in a prompt or in this skill. If the file is
 missing, use the session's default model and say so to the user.
 
@@ -205,6 +205,8 @@ Fill [`subagent-prompt.md`](subagent-prompt.md) once per repo — every placehol
     -C <workspace>/<repo> --skip-git-repo-check --ephemeral \
     -o <scratch>/recon-<repo>.md - < <scratch>/prompt-<repo>.md
   ```
+- **Cursor** — its subagent tool with `model` from the `cursor` block (`inherit` = this chat's
+  model), read-only. Cursor can ignore a pinned model, so note which model you asked for.
 
 Respect `roles.repo-recon.max_parallel`.
 
